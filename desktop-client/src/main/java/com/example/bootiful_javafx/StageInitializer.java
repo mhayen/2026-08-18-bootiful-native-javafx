@@ -16,76 +16,78 @@ import java.util.Map;
 @Component
 class StageInitializer {
 
-	private final SystemBrowserOAuth2Login login;
+    private final SystemBrowserOAuth2Login login;
+    private Label greeting;
+    private TextArea output;
+    private Button call;
+    private Button signIn;
+    private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
 
-	private Label greeting;
+    static final String CLIENT_REGISTRATION_ID = "javafx";
 
-	private TextArea output;
+    private final MessageClient messageClient;
 
-	private Button call;
+    StageInitializer(SystemBrowserOAuth2Login login, //
+                     MessageClient messageClient //
+    ) {
+        this.login = login;
+        this.messageClient = messageClient;
+    }
 
-	private final UserinfoClient userinfoClient;
 
-	private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
+    @EventListener
+    void on(StageReadyEvent event) throws Exception {
+        var loader = new FXMLLoader();
+        var root = (Parent) null;
+        try (var fxmlInputStream = this.fxml.getInputStream()) {
+            root = loader.load(fxmlInputStream);
+        }
+        var scene = new Scene(root);
 
-	static final String CLIENT_REGISTRATION_ID = "javafx";
+        this.greeting = (Label) scene.lookup("#greeting");
+        this.output = (TextArea) scene.lookup("#output");
 
-	StageInitializer(SystemBrowserOAuth2Login login, //
-			UserinfoClient userinfoClient //
-	) {
-		this.login = login;
-		this.userinfoClient = userinfoClient;
-	}
+        this.signIn = (Button) scene.lookup("#signIn"); //
+        this.signIn.setOnAction(e -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
 
-	@EventListener
-	void on(StageReadyEvent event) throws Exception {
-		var loader = new FXMLLoader();
-		var root = (Parent) null;
-		try (var fxmlInputStream = this.fxml.getInputStream()) {
-			root = loader.load(fxmlInputStream);
-		}
-		var scene = new Scene(root);
+        this.call = (Button) scene.lookup("#call");
+        this.call.setOnAction(a -> {
+            Threads.offTheFxThread(() -> {
+                try {
+                    var message = this.messageClient.message();
+                    Threads.onTheFxThread(() -> {
+                        this.output.setText(message.message());
+                    });
+                } catch (Throwable throwable) {
+                    IO.println(throwable.getMessage());
+                }
 
-		this.greeting = (Label) scene.lookup("#greeting");
-		this.output = (TextArea) scene.lookup("#output");
+            });
+        });
 
-		((Button) scene.lookup("#signIn")) //
-			.setOnAction(e -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
+        var stage = event.stage();
+        stage.setTitle("JavaFX + Spring Boot + GraalVM");
+        stage.setScene(scene);
+        stage.setOnHidden(_ -> System.exit(0));
+        stage.show();
+    }
 
-		this.call = (Button) scene.lookup("#call");
-		this.call.setOnAction(e -> {
-			this.call.setDisable(true);
-			Threads.offTheFxThread(() -> {
-				var body = this.userinfoClient.get();
-				Threads.onTheFxThread(() -> {
-					this.output.setText(body);
-					this.call.setDisable(false);
-				});
-			});
-		});
+    @EventListener
+    void on(UserSignedInEvent event) {
+        Threads.onTheFxThread(() -> {
+            this.greeting.setText("Hello, " + event.name() + ".");
+            this.output.setText(claims(event.user().getClaims()));
+            this.call.setDisable(false);
+        });
+    }
 
-		var stage = event.stage();
-		stage.setTitle("JavaFX + Spring Boot + GraalVM");
-		stage.setScene(scene);
-		stage.setOnHidden(_ -> System.exit(0));
-		stage.show();
-	}
-
-	@EventListener
-	void on(UserSignedInEvent event) {
-		Threads.onTheFxThread(() -> {
-			this.greeting.setText("Hello, " + event.name() + ".");
-			this.output.setText(claims(event.user().getClaims()));
-			this.call.setDisable(false);
-		});
-	}
-
-	private String claims(Map<String, Object> claims) {
-		var claimsString = new StringBuilder();
-		var template = "%s: %s" + System.lineSeparator();
-		for (var entry : claims.entrySet())
-			claimsString.append(template.formatted(entry.getKey(), entry.getValue()));
-		return claimsString.toString();
-	}
+    private String claims(Map<String, Object> claims) {
+        var claimsString = new StringBuilder();
+        var template = "%s: %s" + System.lineSeparator();
+        for (var entry : claims.entrySet())
+            claimsString.append(template.formatted(entry.getKey(), entry.getValue()));
+        return claimsString.toString();
+    }
 
 }
+
