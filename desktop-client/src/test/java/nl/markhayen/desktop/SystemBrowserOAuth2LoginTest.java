@@ -34,7 +34,7 @@ class SystemBrowserOAuth2LoginTest {
 			});
 
 	@Test
-	void asksForACodeAndProtectsItWithPkce() throws Exception {
+	void asksForACodeAndProtectsItWithPkce() {
 		this.login.start("javafx");
 		var parameters = UriComponentsBuilder.fromUriString(this.opened.get())
 			.build()

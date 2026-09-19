@@ -3,7 +3,6 @@ package nl.markhayen.desktop;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.util.StringUtils;
 
 import java.util.Objects;
 

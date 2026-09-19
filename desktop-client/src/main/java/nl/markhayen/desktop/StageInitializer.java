@@ -56,10 +56,10 @@ class StageInitializer {
         this.output = (TextArea) scene.lookup("#output");
 
         Button signIn = (Button) scene.lookup("#signIn"); //
-        signIn.setOnAction(e -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
+        signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
 
         this.call = (Button) scene.lookup("#call");
-        this.call.setOnAction(a -> Threads.offTheFxThread(this::createSheet));
+        this.call.setOnAction(_ -> Threads.offTheFxThread(this::createSheet));
 
         var stage = event.stage();
         stage.setTitle("JavaFX + Spring Boot + GraalVM");
@@ -72,10 +72,7 @@ class StageInitializer {
         try {
             var list = this.googleDrive.list();
             String kind = list.get("kind").toString();
-            Threads.onTheFxThread(() -> {
-
-                this.output.setText("kind: " + kind);
-            });
+            Threads.onTheFxThread(() -> this.output.setText("kind: " + kind));
         } catch (Exception ex) {
             IO.println(ex.getMessage());
         }

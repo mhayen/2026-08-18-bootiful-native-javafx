@@ -25,7 +25,7 @@ import org.springframework.web.service.registry.ImportHttpServices;
         UserDetailsServiceAutoConfiguration.class, OAuth2ClientWebSecurityAutoConfiguration.class})
 public class DesktopApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_GLOBAL);
         var applicationContext = new SpringApplicationBuilder()//
                 .sources(DesktopApplication.class)//
