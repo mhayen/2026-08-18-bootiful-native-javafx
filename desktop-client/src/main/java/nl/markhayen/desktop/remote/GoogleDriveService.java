@@ -82,7 +82,7 @@ public class GoogleDriveService {
         try {
             SpreadSheetProperties properties = new SpreadSheetProperties("My first spread sheet");
             SheetProperties sheetProperties = new SheetProperties("sheet 1", 1);
-            new Sheets(sheetProperties, List.of(new Data(List.of(new RowData(List.of(new Values(new UserEnteredValue("My first value"))))))));
+            new Sheets(sheetProperties, List.of(new Data(List.of(new RowData(List.of(new Values(new UserEnteredValue("My first value", null, null))))))));
             var r = new SpreadSheet(properties, List.of());
 
             var list = drive.createSheets(r);

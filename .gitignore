@@ -2,3 +2,4 @@
 /.idea/
 target/
 /desktop-client/client_secret_*.json
+.DS_Store
