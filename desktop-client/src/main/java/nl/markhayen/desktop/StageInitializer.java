@@ -1,5 +1,7 @@
 package nl.markhayen.desktop;
 
+import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
+import nl.markhayen.desktop.auth.UserSignedInEvent;
 import nl.markhayen.desktop.model.CreateSheetsRequest;
 import nl.markhayen.desktop.model.Data;
 import nl.markhayen.desktop.model.RowData;
@@ -14,6 +16,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import nl.markhayen.desktop.remote.GoogleDrive;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+
+import static nl.markhayen.desktop.DesktopApplication.CLIENT_REGISTRATION_ID;
 
 @Component
 class StageInitializer {
@@ -31,7 +36,7 @@ class StageInitializer {
     private Button call;
     private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
 
-    static final String CLIENT_REGISTRATION_ID = "google-login";
+
 
     private final GoogleDrive googleDrive;
 

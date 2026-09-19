@@ -1,4 +1,4 @@
-package nl.markhayen.desktop;
+package nl.markhayen.desktop.auth;
 
 import org.springframework.stereotype.Component;
 
@@ -22,8 +22,3 @@ class SystemBrowser implements AuthorizationBrowser {
 
 }
 
-interface AuthorizationBrowser {
-
-	void open(String authorizationRequestUri);
-
-}

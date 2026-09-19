@@ -1,4 +1,4 @@
-package nl.markhayen.desktop;
+package nl.markhayen.desktop.auth;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
-class SystemBrowserOAuth2Login {
+public class SystemBrowserOAuth2Login {
 
 	private final StringKeyGenerator state = new Base64StringKeyGenerator(Base64.getUrlEncoder());
 
@@ -47,16 +47,16 @@ class SystemBrowserOAuth2Login {
 
 	private final AtomicReference<@Nullable OAuth2AuthorizationRequest> inFlight = new AtomicReference<>();
 
-	SystemBrowserOAuth2Login(ClientRegistrationRepository registrations,
-			OAuth2AuthorizedClientService authorizedClients, AuthorizationBrowser browser,
-			ApplicationEventPublisher events) {
+	public SystemBrowserOAuth2Login(ClientRegistrationRepository registrations,
+                                    OAuth2AuthorizedClientService authorizedClients, AuthorizationBrowser browser,
+                                    ApplicationEventPublisher events) {
 		this.registrations = registrations;
 		this.authorizedClients = authorizedClients;
 		this.browser = browser;
 		this.events = events;
 	}
 
-	void start(String registrationId) {
+	public void start(String registrationId) {
 		var registration = this.registrations.findByRegistrationId(registrationId);
         OAuth2AuthorizationRequest.Builder builder = OAuth2AuthorizationRequest.authorizationCode();
         if (registration != null) {
@@ -73,7 +73,7 @@ class SystemBrowserOAuth2Login {
 		this.browser.open(request.getAuthorizationRequestUri());
 	}
 
-	UserSignedInEvent finish(String registrationId, Map<String, String> parameters) {
+	public UserSignedInEvent finish(String registrationId, Map<String, String> parameters) {
 		var request = this.inFlight.getAndSet(null);
 		var state1 = parameters.get(OAuth2ParameterNames.STATE);
 		var response = OAuth2AuthorizationResponse.success(parameters.get(OAuth2ParameterNames.CODE))

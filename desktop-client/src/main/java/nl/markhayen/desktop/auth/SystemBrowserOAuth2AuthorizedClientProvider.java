@@ -1,4 +1,4 @@
-package nl.markhayen.desktop;
+package nl.markhayen.desktop.auth;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.security.oauth2.client.OAuth2AuthorizationContext;
@@ -18,7 +18,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Component
-class SystemBrowserOAuth2AuthorizedClientProvider implements OAuth2AuthorizedClientProvider {
+public class SystemBrowserOAuth2AuthorizedClientProvider implements OAuth2AuthorizedClientProvider {
 
 	private static final Duration CLOCK_SKEW = Duration.ofSeconds(60);
 
@@ -60,7 +60,7 @@ class SystemBrowserOAuth2AuthorizedClientProvider implements OAuth2AuthorizedCli
 			return this.authorizedClients.loadAuthorizedClient(registration.getRegistrationId(),
 					event.authentication().getName());
 		} //
-		catch (InterruptedException ie) {
+		catch (InterruptedException _) {
 			Thread.currentThread().interrupt();
 			throw new OAuth2AuthorizationException(new OAuth2Error("browser_login_interrupted"));
 		}

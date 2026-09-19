@@ -1,5 +1,6 @@
 package nl.markhayen.desktop;
 
+import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;

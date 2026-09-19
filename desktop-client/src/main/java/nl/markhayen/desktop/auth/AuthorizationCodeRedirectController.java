@@ -1,4 +1,4 @@
-package nl.markhayen.desktop;
+package nl.markhayen.desktop.auth;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

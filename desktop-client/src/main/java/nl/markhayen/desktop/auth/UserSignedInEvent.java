@@ -1,4 +1,4 @@
-package nl.markhayen.desktop;
+package nl.markhayen.desktop.auth;
 
 import org.springframework.context.ApplicationEvent;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -6,17 +6,17 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.util.Objects;
 
-class UserSignedInEvent extends ApplicationEvent {
+public class UserSignedInEvent extends ApplicationEvent {
 
-	UserSignedInEvent(OAuth2AuthenticationToken stage) {
+	public UserSignedInEvent(OAuth2AuthenticationToken stage) {
 		super(stage);
 	}
 
-	OidcUser user() {
+	public OidcUser user() {
 		return (OidcUser) authentication().getPrincipal();
 	}
 
-	String name() {
+	public String name() {
 		return user().getClaim("name");
 	}
 
