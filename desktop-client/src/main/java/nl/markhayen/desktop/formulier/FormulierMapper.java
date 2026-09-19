@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,7 +159,7 @@ public class FormulierMapper {
         if (rows.isEmpty()) {
             return null;
         }
-        Map<String, String> row = rows.get(0);
+        Map<String, String> row = rows.getFirst();
         String resultaatSpreadsheetId = row.get("resultaatSpreadsheetId");
         if (resultaatSpreadsheetId == null) {
             // legacy sheets name this column "result_spreadsheet" instead
@@ -224,7 +225,7 @@ public class FormulierMapper {
         List<List<Object>> rows = new ArrayList<>();
         if (dagdelen != null) {
             for (String d : dagdelen) {
-                rows.add(Arrays.asList(d));
+                rows.add(Collections.singletonList(d));
             }
         }
         return sheet("dagdelen", 4, DAGDELEN_HEADER, rows);
@@ -234,7 +235,7 @@ public class FormulierMapper {
         List<List<Object>> rows = new ArrayList<>();
         if (afhankelijkheden != null && afhankelijkheden.aantalKindermenus() != null) {
             for (String a : afhankelijkheden.aantalKindermenus()) {
-                rows.add(Arrays.asList(a));
+                rows.add(Collections.singletonList(a));
             }
         }
         return sheet("afhankelijkheden", 5, AFHANKELIJKHEDEN_HEADER, rows);
@@ -254,7 +255,7 @@ public class FormulierMapper {
     private List<Map<String, String>> readRows(Sheets sheet) {
         List<RowData> allRows = sheet.data() == null ? List.of() : sheet.data().stream()
                 .filter(Objects::nonNull)
-                .flatMap(d -> d.rowData() == null ? Stream.<RowData>empty() : d.rowData().stream())
+                .flatMap(d -> d.rowData() == null ? Stream.empty() : d.rowData().stream())
                 .toList();
         if (allRows.isEmpty()) {
             return List.of();

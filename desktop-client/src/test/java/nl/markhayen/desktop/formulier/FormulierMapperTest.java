@@ -25,7 +25,7 @@ class FormulierMapperTest {
         assertThat(formulier.formulierNaam()).isEqualTo("formulier-menukeuzekerst");
 
         assertThat(formulier.navigatie()).isNotEmpty();
-        Navigatie eersteStap = formulier.navigatie().get(0);
+        Navigatie eersteStap = formulier.navigatie().getFirst();
         assertThat(eersteStap.volgorde()).isEqualTo(1);
         assertThat(eersteStap.sectie()).isEqualTo("start");
         assertThat(eersteStap.validatie()).isTrue();

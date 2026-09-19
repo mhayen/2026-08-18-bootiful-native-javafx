@@ -24,8 +24,8 @@ import static java.util.stream.Collectors.joining;
 
 @Service
 public class GoogleDriveService {
-    private GoogleDrive drive;
-    private JsonMapper jsonMapper;
+    private final GoogleDrive drive;
+    private final JsonMapper jsonMapper;
 
     public GoogleDriveService(GoogleDrive drive, JsonMapper jsonMapper) {
         this.drive = drive;
