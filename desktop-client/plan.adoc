@@ -1,0 +1,16 @@
+= Plan
+
+Wat gaan we doen
+
+== Basis
+
+OAuth2 Oidc authenticatie en autorisatie
+Google Drive en Sheets integratie
+
+== Admin
+
+Toon lijst van formulier spreadsheet.
+Kopier van bestaand.
+Inladen formulier uit spreadsheet.
+Opslaan formulier in spreadsheet.
+Genereer html voor in website.
