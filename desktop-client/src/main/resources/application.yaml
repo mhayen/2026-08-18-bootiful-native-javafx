@@ -11,7 +11,7 @@ spring.security.oauth2.client:
       client-authentication-method: client_secret_basic
       authorization-grant-type: authorization_code
       redirect-uri: http://127.0.0.1:8385/login/oauth2/code/google
-      scope: [openid, profile, email, https://www.googleapis.com/auth/drive]
+      scope: [ openid, profile, email, https://www.googleapis.com/auth/drive ]
       provider: google-login
   provider:
     google-login:

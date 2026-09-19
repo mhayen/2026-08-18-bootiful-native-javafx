@@ -15,36 +15,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SystemBrowserOAuth2LoginTest {
 
-	private static final ClientRegistration REGISTRATION = ClientRegistration.withRegistrationId("javafx")
-		.clientId("javafx")
-		.clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-		.authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-		.redirectUri("http://127.0.0.1:8385/login/oauth2/code/javafx")
-		.scope("openid")
-		.authorizationUri("http://localhost:9090/oauth2/authorize")
-		.tokenUri("http://localhost:9090/oauth2/token")
-		.jwkSetUri("http://localhost:9090/oauth2/jwks")
-		.build();
+    private static final ClientRegistration REGISTRATION = ClientRegistration.withRegistrationId("javafx")
+            .clientId("javafx")
+            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .redirectUri("http://127.0.0.1:8385/login/oauth2/code/javafx")
+            .scope("openid")
+            .authorizationUri("http://localhost:9090/oauth2/authorize")
+            .tokenUri("http://localhost:9090/oauth2/token")
+            .jwkSetUri("http://localhost:9090/oauth2/jwks")
+            .build();
 
-	private final AtomicReference<String> opened = new AtomicReference<>();
+    private final AtomicReference<String> opened = new AtomicReference<>();
 
-	private final SystemBrowserOAuth2Login login = new SystemBrowserOAuth2Login(
-			new InMemoryClientRegistrationRepository(REGISTRATION),
-			new InMemoryOAuth2AuthorizedClientService(new InMemoryClientRegistrationRepository(REGISTRATION)),
-			this.opened::set, _ -> {
-			});
+    private final SystemBrowserOAuth2Login login = new SystemBrowserOAuth2Login(
+            new InMemoryClientRegistrationRepository(REGISTRATION),
+            new InMemoryOAuth2AuthorizedClientService(new InMemoryClientRegistrationRepository(REGISTRATION)),
+            this.opened::set, _ -> {
+    });
 
-	@Test
-	void asksForACodeAndProtectsItWithPkce() {
-		this.login.start("javafx");
-		var parameters = UriComponentsBuilder.fromUriString(this.opened.get())
-			.build()
-			.getQueryParams()
-			.toSingleValueMap();
-		assertThat(parameters).containsEntry("response_type", "code")
-			.containsEntry("client_id", "javafx")
-			.containsEntry("code_challenge_method", "S256")
-			.containsKeys("state", "code_challenge");
-	}
+    @Test
+    void asksForACodeAndProtectsItWithPkce() {
+        this.login.start("javafx");
+        var parameters = UriComponentsBuilder.fromUriString(this.opened.get())
+                .build()
+                .getQueryParams()
+                .toSingleValueMap();
+        assertThat(parameters).containsEntry("response_type", "code")
+                .containsEntry("client_id", "javafx")
+                .containsEntry("code_challenge_method", "S256")
+                .containsKeys("state", "code_challenge");
+    }
 
 }

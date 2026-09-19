@@ -1,28 +1,20 @@
 package nl.markhayen.desktop;
 
-import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
-import nl.markhayen.desktop.auth.UserSignedInEvent;
-import nl.markhayen.desktop.model.CreateSheetsRequest;
-import nl.markhayen.desktop.model.Data;
-import nl.markhayen.desktop.model.RowData;
-import nl.markhayen.desktop.model.SheetProperties;
-import nl.markhayen.desktop.model.Sheets;
-import nl.markhayen.desktop.model.SpreadSheetProperties;
-import nl.markhayen.desktop.model.UserEnteredValue;
-import nl.markhayen.desktop.model.Values;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import nl.markhayen.desktop.remote.GoogleDrive;
+import javafx.scene.control.TextField;
+import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
+import nl.markhayen.desktop.auth.UserSignedInEvent;
+import nl.markhayen.desktop.remote.GoogleDriveService;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 
 import static nl.markhayen.desktop.DesktopApplication.CLIENT_REGISTRATION_ID;
@@ -33,16 +25,16 @@ class StageInitializer {
     private final SystemBrowserOAuth2Login login;
     private Label greeting;
     private TextArea output;
+    private TextField fileId;
     private Button call;
+    private Button download;
     private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
 
 
-
-    private final GoogleDrive googleDrive;
+    private final GoogleDriveService googleDrive;
 
     StageInitializer(SystemBrowserOAuth2Login login, //
-                     GoogleDrive googleDrive //
-    ) {
+                     GoogleDriveService googleDrive) {
         this.login = login;
         this.googleDrive = googleDrive;
     }
@@ -51,7 +43,7 @@ class StageInitializer {
     @EventListener
     void on(StageReadyEvent event) throws Exception {
         var loader = new FXMLLoader();
-        var root = (Parent) null;
+        Parent root;
         try (var fxmlInputStream = this.fxml.getInputStream()) {
             root = loader.load(fxmlInputStream);
         }
@@ -59,12 +51,15 @@ class StageInitializer {
 
         this.greeting = (Label) scene.lookup("#greeting");
         this.output = (TextArea) scene.lookup("#output");
+        this.fileId = (TextField) scene.lookup("#fileId");
 
         Button signIn = (Button) scene.lookup("#signIn"); //
         signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
 
         this.call = (Button) scene.lookup("#call");
-        this.call.setOnAction(_ -> Threads.offTheFxThread(this::createSheet));
+        this.call.setOnAction(_ -> Threads.offTheFxThread(this::callApi));
+        this.download = (Button) scene.lookup("#download");
+        this.download.setOnAction(_ -> Threads.offTheFxThread(() -> googleDrive.downloadFormulier(output, fileId.getText())));
 
         var stage = event.stage();
         stage.setTitle("JavaFX + Spring Boot + GraalVM");
@@ -73,30 +68,11 @@ class StageInitializer {
         stage.show();
     }
 
-    private void listFiles() {
-        try {
-            var list = this.googleDrive.list();
-            String kind = list.get("kind").toString();
-            Threads.onTheFxThread(() -> this.output.setText("kind: " + kind));
-        } catch (Exception ex) {
-            IO.println(ex.getMessage());
-        }
+    private void callApi() {
+//        googleDrive.createSheet(output);
+        googleDrive.searchFiles(output);
     }
 
-    private void createSheet() {
-        try {
-            SpreadSheetProperties properties = new SpreadSheetProperties("My first spread sheet");
-            SheetProperties sheetProperties = new SheetProperties("sheet 1", 1);
-            new Sheets(sheetProperties, List.of(new Data(List.of(new RowData(List.of(new Values(new UserEnteredValue("My first value"))))))));
-            var r = new CreateSheetsRequest(properties, List.of());
-
-            var list = this.googleDrive.createSheets(r);
-            String spreadsheetId = list.get("spreadsheetId").toString();
-            Threads.onTheFxThread(() -> this.output.setText("spreadsheetId: " + spreadsheetId));
-        } catch (Exception ex) {
-            IO.println(ex.getMessage());
-        }
-    }
 
     @EventListener
     void on(UserSignedInEvent event) {
@@ -104,6 +80,7 @@ class StageInitializer {
             this.greeting.setText("Hello, " + event.name() + ".");
             this.output.setText(claims(event.user().getClaims()));
             this.call.setDisable(false);
+            this.download.setDisable(false);
         });
     }
 

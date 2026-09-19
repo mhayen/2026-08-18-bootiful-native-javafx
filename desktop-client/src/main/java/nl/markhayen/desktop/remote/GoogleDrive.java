@@ -1,8 +1,11 @@
 package nl.markhayen.desktop.remote;
 
-import nl.markhayen.desktop.model.CreateSheetsRequest;
+import nl.markhayen.desktop.model.SearchResponse;
+import nl.markhayen.desktop.model.SpreadSheet;
 import org.springframework.security.oauth2.client.annotation.ClientRegistrationId;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
@@ -16,6 +19,15 @@ public interface GoogleDrive {
     @GetExchange("https://www.googleapis.com/drive/v3/files")
     Map<String, Object> list();
 
+    @GetExchange("https://www.googleapis.com/drive/v3/files")
+    SearchResponse search(@RequestParam("q") String searchRequest);
+
     @PostExchange("https://sheets.googleapis.com/v4/spreadsheets")
-    Map<String, Object> createSheets(@RequestBody CreateSheetsRequest request);
+    Map<String, Object> createSheets(@RequestBody SpreadSheet request);
+
+    @GetExchange("https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?includeGridData=true")
+    SpreadSheet downloadSpreadSheet(@PathVariable String spreadsheetId);
+
+    @GetExchange("https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}?includeGridData=true")
+    String downloadSpreadSheetAsString(@PathVariable String spreadsheetId);
 }

@@ -29,62 +29,62 @@ import static org.mockito.Mockito.verify;
 // are spelled out rather than discovered, so that loading the context does not depend on the
 // authorization server being up.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = {
-		"spring.security.oauth2.client.registration.google-login.provider=static",
-		"spring.security.oauth2.client.registration.google-login.client-id=test",
-		"spring.security.oauth2.client.registration.google-login.client-secret=test",
-		"spring.security.oauth2.client.provider.static.authorization-uri=http://localhost:9090/oauth2/authorize",
-		"spring.security.oauth2.client.provider.static.token-uri=http://localhost:9090/oauth2/token",
-		"spring.security.oauth2.client.provider.static.user-info-uri=http://localhost:9090/userinfo",
-		"spring.security.oauth2.client.provider.static.jwk-set-uri=http://localhost:9090/oauth2/jwks",
-		"spring.security.oauth2.client.provider.static.user-name-attribute=sub" })
+        "spring.security.oauth2.client.registration.google-login.provider=static",
+        "spring.security.oauth2.client.registration.google-login.client-id=test",
+        "spring.security.oauth2.client.registration.google-login.client-secret=test",
+        "spring.security.oauth2.client.provider.static.authorization-uri=http://localhost:9090/oauth2/authorize",
+        "spring.security.oauth2.client.provider.static.token-uri=http://localhost:9090/oauth2/token",
+        "spring.security.oauth2.client.provider.static.user-info-uri=http://localhost:9090/userinfo",
+        "spring.security.oauth2.client.provider.static.jwk-set-uri=http://localhost:9090/oauth2/jwks",
+        "spring.security.oauth2.client.provider.static.user-name-attribute=sub"})
 class AuthorizationCodeRedirectControllerTest {
 
-	// the token exchange on the other side of this needs an authorization server; what is
-	// being
-	// tested here is the trip from the browser to it, and the page that comes back.
-	@MockitoBean
-	private SystemBrowserOAuth2Login login;
+    // the token exchange on the other side of this needs an authorization server; what is
+    // being
+    // tested here is the trip from the browser to it, and the page that comes back.
+    @MockitoBean
+    private SystemBrowserOAuth2Login login;
 
-	@Value("${spring.security.oauth2.client.registration.google-login.redirect-uri}")
-	private URI redirectUri;
+    @Value("${spring.security.oauth2.client.registration.google-login.redirect-uri}")
+    private URI redirectUri;
 
-	@Test
-	void handsTheAuthorizationResponseOverAndRendersThePage() throws Exception {
-		given(this.login.finish(eq("google-login"), anyMap())).willReturn(signedIn("jlong"));
-		try (var http = HttpClient.newHttpClient()) {
-			var response = http.send(get(this.redirectUri + "?code=abc&state=xyz%2F1"),
-					HttpResponse.BodyHandlers.ofString());
-			assertThat(response.statusCode()).isEqualTo(200);
-			assertThat(response.body()).contains("You're signed in, test@example.com.");
-		}
-		// the registration id comes off the path, the code and state out of the query -
-		// decoded
-		verify(this.login).finish("google-login", Map.of("code", "abc", "state", "xyz/1"));
-	}
+    @Test
+    void handsTheAuthorizationResponseOverAndRendersThePage() throws Exception {
+        given(this.login.finish(eq("google-login"), anyMap())).willReturn(signedIn("jlong"));
+        try (var http = HttpClient.newHttpClient()) {
+            var response = http.send(get(this.redirectUri + "?code=abc&state=xyz%2F1"),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.body()).contains("You're signed in, test@example.com.");
+        }
+        // the registration id comes off the path, the code and state out of the query -
+        // decoded
+        verify(this.login).finish("google-login", Map.of("code", "abc", "state", "xyz/1"));
+    }
 
-	@Test
-	void isTheOnlyThingThisAppServes() throws Exception {
-		try (var http = HttpClient.newHttpClient()) {
-			assertThat(http
-				.send(get(this.redirectUri.resolve("/favicon.ico").toString()), HttpResponse.BodyHandlers.ofString())
-				.statusCode()).isEqualTo(404);
-		}
-	}
+    @Test
+    void isTheOnlyThingThisAppServes() throws Exception {
+        try (var http = HttpClient.newHttpClient()) {
+            assertThat(http
+                    .send(get(this.redirectUri.resolve("/favicon.ico").toString()), HttpResponse.BodyHandlers.ofString())
+                    .statusCode()).isEqualTo(404);
+        }
+    }
 
-	private static UserSignedInEvent signedIn(String username) {
-		var idToken = OidcIdToken.withTokenValue("id-token")
-			.issuedAt(Instant.now())
-			.expiresAt(Instant.now().plusSeconds(60))
-			.claim("sub", "0f5b8a2e")
-			.claim("email", "test@example.com")
-			.claim("preferred_username", username)
-			.build();
-		var user = new DefaultOidcUser(List.of(), idToken);
-		return new UserSignedInEvent(new OAuth2AuthenticationToken(user, user.getAuthorities(), "google-login"));
-	}
+    private static UserSignedInEvent signedIn(String username) {
+        var idToken = OidcIdToken.withTokenValue("id-token")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .claim("sub", "0f5b8a2e")
+                .claim("email", "test@example.com")
+                .claim("preferred_username", username)
+                .build();
+        var user = new DefaultOidcUser(List.of(), idToken);
+        return new UserSignedInEvent(new OAuth2AuthenticationToken(user, user.getAuthorities(), "google-login"));
+    }
 
-	private static HttpRequest get(String uri) {
-		return HttpRequest.newBuilder(URI.create(uri)).GET().build();
-	}
+    private static HttpRequest get(String uri) {
+        return HttpRequest.newBuilder(URI.create(uri)).GET().build();
+    }
 
 }

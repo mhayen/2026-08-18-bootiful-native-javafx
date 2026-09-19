@@ -8,27 +8,28 @@ import java.util.Objects;
 
 public class UserSignedInEvent extends ApplicationEvent {
 
-	public UserSignedInEvent(OAuth2AuthenticationToken stage) {
-		super(stage);
-	}
+    public UserSignedInEvent(OAuth2AuthenticationToken stage) {
+        super(stage);
+    }
 
-	public OidcUser user() {
-		return (OidcUser) authentication().getPrincipal();
-	}
+    public OidcUser user() {
+        return (OidcUser) authentication().getPrincipal();
+    }
 
-	public String name() {
-		return user().getClaim("name");
-	}
+    public String name() {
+        return user().getClaim("name");
+    }
 
-	String sub() {
-		return Objects.requireNonNull(user().getPreferredUsername());
-	}
-	String email() {
-		return Objects.requireNonNull(user().getEmail());
-	}
+    String sub() {
+        return Objects.requireNonNull(user().getPreferredUsername());
+    }
 
-	OAuth2AuthenticationToken authentication() {
-		return (OAuth2AuthenticationToken) getSource();
-	}
+    String email() {
+        return Objects.requireNonNull(user().getEmail());
+    }
+
+    OAuth2AuthenticationToken authentication() {
+        return (OAuth2AuthenticationToken) getSource();
+    }
 
 }
