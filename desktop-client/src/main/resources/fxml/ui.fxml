@@ -27,10 +27,8 @@
             <padding>
                 <Insets top="0.0" right="16.0" bottom="16.0" left="16.0"/>
             </padding>
-            <children>
-                <TextField fx:id="spreadsheetFilter" promptText="Filter by name..." disable="true"/>
-                <ListView fx:id="spreadsheetList" disable="true" VBox.vgrow="ALWAYS"/>
-            </children>
+            <TextField fx:id="spreadsheetFilter" promptText="Filter by name..." disable="true"/>
+            <ListView fx:id="spreadsheetList" disable="true" VBox.vgrow="ALWAYS"/>
         </VBox>
     </left>
     <center>

@@ -101,7 +101,7 @@ class StageInitializer {
         });
 
         var stage = event.stage();
-        stage.setTitle("JavaFX + Spring Boot + GraalVM");
+        stage.setTitle("Formulier beheer");
         stage.setScene(scene);
         stage.setOnHidden(_ -> System.exit(0));
         stage.show();

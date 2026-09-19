@@ -89,7 +89,7 @@ public class FormulierMapper {
         Map<String, String> sectieNaamBySectie = new LinkedHashMap<>();
         for (Map<String, String> row : readRows(sheet.get())) {
             String sectie = str(row, "sectie");
-            veldenBySectie.computeIfAbsent(sectie, k -> new ArrayList<>()).add(toVelden(row));
+            veldenBySectie.computeIfAbsent(sectie, _ -> new ArrayList<>()).add(toVelden(row));
             titelBySectie.putIfAbsent(sectie, str(row, "titel"));
             sectieNaamBySectie.putIfAbsent(sectie, str(row, "sectieNaam"));
         }
@@ -260,7 +260,7 @@ public class FormulierMapper {
         if (allRows.isEmpty()) {
             return List.of();
         }
-        RowData headerRow = allRows.get(0);
+        RowData headerRow = allRows.getFirst();
         int columnCount = headerRow.values() == null ? 0 : headerRow.values().size();
         List<String> headers = new ArrayList<>(columnCount);
         for (int c = 0; c < columnCount; c++) {
@@ -296,16 +296,12 @@ public class FormulierMapper {
     }
 
     private static UserEnteredValue toUserEnteredValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Boolean b) {
-            return new UserEnteredValue(null, null, b);
-        }
-        if (value instanceof Number n) {
-            return new UserEnteredValue(null, n.doubleValue(), null);
-        }
-        return new UserEnteredValue(String.valueOf(value), null, null);
+        return switch (value) {
+            case null -> null;
+            case Boolean b -> new UserEnteredValue(null, null, b);
+            case Number n -> new UserEnteredValue(null, n.doubleValue(), null);
+            default -> new UserEnteredValue(String.valueOf(value), null, null);
+        };
     }
 
     /**
@@ -367,7 +363,7 @@ public class FormulierMapper {
         }
         try {
             return Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return null;
         }
     }
