@@ -3,26 +3,37 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<VBox alignment="CENTER" spacing="12.0" prefWidth="620.0" prefHeight="480.0"
-      stylesheets="@/styles.css" xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml">
-    <padding>
-        <Insets top="32.0" right="32.0" bottom="32.0" left="32.0"/>
-    </padding>
-    <children>
-        <Label fx:id="greeting" text="Hello, stranger." styleClass="greeting"/>
-        <HBox alignment="CENTER" spacing="12.0">
+<BorderPane prefWidth="960.0" prefHeight="600.0" stylesheets="@/styles.css"
+            xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="12.0">
+            <padding>
+                <Insets top="16.0" right="16.0" bottom="16.0" left="16.0"/>
+            </padding>
             <children>
+                <Label fx:id="greeting" text="Hello, stranger." styleClass="greeting"/>
                 <Button fx:id="signIn" defaultButton="true" text="Sign in with your browser"/>
-                <Button fx:id="call" disable="true" text="Call the API"/>
-                <TextField fx:id="fileId" promptText="File ID"/>
-                <Button fx:id="download" disable="true" text="Download formulier"/>
             </children>
         </HBox>
-        <TextArea fx:id="output" editable="false" prefRowCount="10" wrapText="true"/>
-    </children>
-</VBox>
+    </top>
+    <left>
+        <VBox spacing="8.0" prefWidth="260.0">
+            <padding>
+                <Insets top="0.0" right="16.0" bottom="16.0" left="16.0"/>
+            </padding>
+            <children>
+                <TextField fx:id="spreadsheetFilter" promptText="Filter by name..." disable="true"/>
+                <ListView fx:id="spreadsheetList" disable="true" VBox.vgrow="ALWAYS"/>
+            </children>
+        </VBox>
+    </left>
+    <center>
+        <TabPane fx:id="tabs" tabClosingPolicy="ALL_TABS"/>
+    </center>
+</BorderPane>

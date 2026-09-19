@@ -28,3 +28,78 @@
 .button:hover {
     -fx-background-color: #7cc44b;
 }
+
+.text-field {
+    -fx-background-color: #1f2937;
+    -fx-text-fill: #e5e7eb;
+    -fx-prompt-text-fill: #9ca3af;
+}
+
+.list-view {
+    -fx-background-color: #111827;
+    -fx-control-inner-background: #1f2937;
+}
+
+.list-cell {
+    -fx-text-fill: #e5e7eb;
+    -fx-background-color: transparent;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #6db33f;
+    -fx-text-fill: white;
+}
+
+.tab-pane .tab-header-area .tab {
+    -fx-background-color: #1f2937;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #6db33f;
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: #e5e7eb;
+}
+
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.table-view {
+    -fx-background-color: #1f2937;
+    -fx-control-inner-background: #1f2937;
+}
+
+.table-view .column-header-background,
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: #111827;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #e5e7eb;
+}
+
+.table-row-cell {
+    -fx-background-color: #1f2937;
+    -fx-control-inner-background: #1f2937;
+    -fx-table-cell-border-color: #374151;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #24303f;
+}
+
+.table-cell {
+    -fx-text-fill: #e5e7eb;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: white;
+}
