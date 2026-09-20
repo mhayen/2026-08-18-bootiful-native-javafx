@@ -1,5 +1,5 @@
 /local.env
 /.idea/
 target/
-/desktop-client/client_secret_*.json
+client_secret_*.json
 .DS_Store

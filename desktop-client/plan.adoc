@@ -8,10 +8,10 @@ OAuth2 Oidc authenticatie en autorisatie, gedaan Google Drive en Sheets integrat
 
 == Admin
 
-Toon lijst van formulier spreadsheet.
+Toon lijst van formulier spreadsheet. gedaan
 Toon per formulier de resultaat spreadsheet.
 Kopier bestaand formulier.
-Inladen formulier uit spreadsheet.
+Inladen formulier uit spreadsheet. gedaan
 Opslaan formulier in spreadsheet.
 Genereer html voor in website.
 

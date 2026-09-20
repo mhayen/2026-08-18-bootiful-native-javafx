@@ -1,5 +1,5 @@
 spring:
-  application.name: bootiful-javafx
+  application.name: formulier-beheer
   threads.virtual.enabled: true
 server:
   address: 127.0.0.1
@@ -23,3 +23,4 @@ spring.security.oauth2.client:
       jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
 
 
+implementation-id: AKfycbwCqy6fyMzNs6RwjB2VUfF6m2qbxi18KTEqeAQgUaRVVte-PkaDmL4EALkQfDwNLyFc

@@ -20,6 +20,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
 import nl.markhayen.desktop.auth.UserSignedInEvent;
 import nl.markhayen.desktop.formulier.Datums;
@@ -53,6 +54,7 @@ class StageInitializer {
     private TextField spreadsheetFilter;
     private ListView<DriveFile> spreadsheetList;
     private TabPane tabs;
+    private Text status;
 
     StageInitializer(SystemBrowserOAuth2Login login, //
                      GoogleDriveService googleDrive) {
@@ -78,6 +80,10 @@ class StageInitializer {
 
         Button signIn = (Button) scene.lookup("#signIn"); //
         signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
+        Button runScript = (Button) scene.lookup("#runScript"); //
+        runScript.setOnAction(_ -> Threads.offTheFxThread(this::runScript));
+        status = (Text) scene.lookup("#status");
+        status.setText("Gestart");
 
         this.spreadsheetList.setCellFactory(_ -> new ListCell<>() {
             @Override
@@ -107,6 +113,7 @@ class StageInitializer {
         stage.show();
     }
 
+
     @EventListener
     void on(UserSignedInEvent event) {
         Threads.onTheFxThread(() -> {
@@ -120,6 +127,11 @@ class StageInitializer {
     private void loadSpreadsheets() {
         var files = this.googleDrive.listSpreadsheets();
         Threads.onTheFxThread(() -> this.spreadsheets.setAll(files));
+    }
+
+    private void runScript() {
+        String s = this.googleDrive.runScript();
+        Threads.onTheFxThread(() -> this.status.setText(s));
     }
 
     private void openFormulierTab(DriveFile file) {

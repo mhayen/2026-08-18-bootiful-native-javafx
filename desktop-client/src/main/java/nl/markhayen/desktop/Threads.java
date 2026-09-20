@@ -7,8 +7,7 @@ import java.util.function.Consumer;
 public class Threads {
 
     static void offTheFxThread(Runnable runnable) {
-        offTheFxThread(runnable, _ -> {
-        });
+        offTheFxThread(runnable, Throwable::printStackTrace);
     }
 
     static void offTheFxThread(Runnable runnable, Consumer<Throwable> onFailure) {
