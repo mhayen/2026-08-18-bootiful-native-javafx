@@ -17,6 +17,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import nl.markhayen.desktop.formulier.Cell;
@@ -29,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,16 +47,19 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+@Component
 class FormulierView {
 
     private static final Logger log = LoggerFactory.getLogger(FormulierView.class);
     private static final Resource FXML = new ClassPathResource("/fxml/formulier-view.fxml");
     private static final LocalDate SERIAL_NUMBER_EPOCH = LocalDate.of(1899, 12, 30);
+    HtmlGenerator htmlGenerator;
 
-    private FormulierView() {
+    public FormulierView(HtmlGenerator htmlGenerator) {
+        this.htmlGenerator = htmlGenerator;
     }
 
-    static Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status,
+    Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status,
                        Runnable reload) {
         Parent root;
         try (var fxmlInputStream = FXML.getInputStream()) {
@@ -79,10 +85,32 @@ class FormulierView {
         save.setOnAction(_ -> save(spreadsheetId, googleDrive, save, pending, datumsItems, navigatieItems, reload));
         var updateTeksten = (Button) root.lookup("#updateTeksten");
         updateTeksten.setOnAction(_ -> runUpdateTeksten(formulier.formulierNaam(), googleDrive, status));
+        var generateHtml = (Button) root.lookup("#generateHtml");
+        generateHtml.setOnAction(_ -> runGenerateHtml(formulier.formulierNaam(), status));
 
         var scroll = new ScrollPane(root);
         scroll.setFitToWidth(true);
         return scroll;
+    }
+
+    private void runGenerateHtml(String formulierNaam, Label status) {
+        Threads.offTheFxThread(() -> {
+            var ref = new Object() {
+                String html = null;
+            };
+            try {
+                ref.html = htmlGenerator.generateHtml(formulierNaam);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            Threads.onTheFxThread(() -> {
+                final Clipboard clipboard = Clipboard.getSystemClipboard();
+                final ClipboardContent content = new ClipboardContent();
+                content.putString(ref.html);
+                clipboard.setContent(content);
+                status.setText("HTML generated and saved");
+            });
+        });
     }
 
     private static void save(String spreadsheetId, GoogleDriveService googleDrive, Button save,

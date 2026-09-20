@@ -4,20 +4,21 @@ Wat gaan we doen
 
 == Basis
 
-OAuth2 Oidc authenticatie en autorisatie, gedaan Google Drive en Sheets integratie, gedaan
+OAuth2 Oidc authenticatie en autorisatie, Gedaan Google Drive en Sheets integratie. Gedaan
 
 == Admin
 
-Toon lijst van formulier spreadsheet. gedaan
-Toon per formulier de resultaat spreadsheet.
+Toon lijst van formulier spreadsheet. Gedaan
+Toon per formulier het resultaat spreadsheet.
 Kopier bestaand formulier.
-Inladen formulier uit spreadsheet. gedaan
-Opslaan formulier in spreadsheet.
-Genereer html voor in website.
+Inladen formulier uit spreadsheet. Gedaan
+Opslaan formulier in spreadsheet. Gedaan.
+Genereer html voor in website. Gedaan.
 
 == Via Google Apps Script Api
 
-Trigger initialisatie van formulier Trigger reload van formulier
+Trigger initialisatie van formulier 
+Trigger reload van formulier. Gedaan
 
 == Verder
 

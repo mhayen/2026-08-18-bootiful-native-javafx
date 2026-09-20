@@ -50,11 +50,14 @@ class StageInitializer {
     private Stage stage;
     private TabPane tabs;
     private Label status;
+    private FormulierView formulierView;
 
     StageInitializer(SystemBrowserOAuth2Login login, //
-                     GoogleDriveService googleDrive) {
+                     GoogleDriveService googleDrive,
+                     FormulierView formulierView) {
         this.login = login;
         this.googleDrive = googleDrive;
+        this.formulierView = formulierView;
     }
 
     @EventListener
@@ -83,11 +86,10 @@ class StageInitializer {
 
     @SuppressWarnings("unchecked")
     private void showMainScreen(UserSignedInEvent event) {
-        ListView<DriveFile> spreadsheetList;
         var scene = new Scene(load(this.fxml));
 
         TextField spreadsheetFilter = (TextField) scene.lookup("#spreadsheetFilter");
-        spreadsheetList = (ListView<DriveFile>) scene.lookup("#spreadsheetList");
+        ListView<DriveFile> spreadsheetList = (ListView<DriveFile>) scene.lookup("#spreadsheetList");
         this.tabs = (TabPane) scene.lookup("#tabs");
 
         Button runScript = (Button) scene.lookup("#runScript"); //
@@ -169,7 +171,7 @@ class StageInitializer {
     private void loadFormulierInto(Tab tab, String fileId) {
         Threads.offTheFxThread(() -> {
             var formulier = this.googleDrive.fetchFormulier(fileId);
-            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(fileId, formulier, this.googleDrive,
+            Threads.onTheFxThread(() -> tab.setContent(formulierView.build(fileId, formulier, this.googleDrive,
                     this.status, () -> loadFormulierInto(tab, fileId))));
         }, ex -> tab.setContent(new Label("Failed to load: " + ex.getMessage())));
     }

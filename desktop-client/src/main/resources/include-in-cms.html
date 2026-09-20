@@ -15,61 +15,43 @@
 </style>
 
 <div id="target">
-    <iframe title="menukeuze" id="formulieriframe"  style="display: block;background: #FFFFFF;border: none;"></iframe>
+    <iframe title="menukeuze" id="formulier-iframe"  style="display: block;background: #FFFFFF;border: none;"></iframe>
 </div>
 <script>
-    const deploymentId = 'AKfycbyFfwqLxkiRdBdek8sma6HYa5WcXf8vv5uWF2rIf2_HtM8A8Ljrx6z5IPCzpCTHTA7mdA' ;
+    const deploymentId = '<<<DEPLOYMENT_ID>>>' ;
     let formulierUrl = "https://script.google.com/macros/s/" + deploymentId + "/exec";
-    const formulierNaam = 'menukeuze-instelling-2022';
+    const formulierNaam = '<<<FORMULIER_NAAM>>>';
     const queryString = globalThis.location.search;
 
     const urlParams = new URLSearchParams(queryString);
-    console.log("urlParams", urlParams.toString());
-    if (urlParams.has('init')) {
-        formulierUrl = formulierUrl + `?formName=${formulierNaam}&init`;
-    } else if (urlParams.has('update')) {
-        formulierUrl = formulierUrl + `?formName=${formulierNaam}&update`;
-    } else if (urlParams.has('updateVelden')) {
-        formulierUrl = formulierUrl + `?formName=${formulierNaam}&updateVelden`;
-    } else if (urlParams.has('code')) {
+    if (urlParams.has('code')) {
         const code = urlParams.get('code')
         formulierUrl = formulierUrl + `?formName=${formulierNaam}&code=${code}`;
-    } else if (urlParams.has('formName')) {
-        const formName = urlParams.get('formName')
-        formulierUrl = formulierUrl + `?formName=${formName}&code=test_test`;
+        const formIframe = document.getElementById("formulier-iframe");
+        formIframe.src = formulierUrl;
+
+        const pagina = document.getElementById("pagina-tekst");
+        let contentHeight = 400;
+        pagina.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
+        window.addEventListener(
+            'message',
+            function (e) {
+                // message that was passed from iframe page
+                let message = e.data;
+                let targetEl = document.getElementById("target");
+
+                let clientWidth = targetEl.clientWidth;
+                if (message.height &&  message.height !== contentHeight) {
+                    formIframe.style.height = message.height + 'px';
+                    contentHeight = message.height;
+                    formIframe.style.width = clientWidth + 'px';
+                }
+                if (message.scroll) {
+                    pagina.scrollIntoView(message.scroll)
+                }
+            }, false);
     } else {
-        console.log('no parameters')
+        console.log('no code parameter found')
     }
-    console.log('formulierUrl', formulierUrl)
-    let slideblok = document.querySelector("#slideblok");
-    // slideblok.remove()
-    var formIframe = document.getElementById("formulieriframe");
-    var pagina = document.getElementById("pagina-tekst");
-    formIframe.src = formulierUrl;
-    let contentHeight = 400;
-    pagina.scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"})
-    // pagina.scrollIntoView(false)
-    window.addEventListener(
-        'message',
-        function (e) {
-            // message that was passed from iframe page
-            let message = e.data;
-            let targetEl = document.getElementById("target");
 
-            let clientWidth = targetEl.clientWidth;
-            if (message.height &&  message.height !== contentHeight) {
-                console.log('clientWidth', clientWidth)
-                console.log('message.height', message.height)
-                formIframe.style.height = message.height + 'px';
-                contentHeight = message.height;
-                formIframe.style.width = clientWidth + 'px';
-            }
-            if (message.scroll) {
-                console.log('message.scroll', message.scroll)
-                pagina.scrollIntoView(message.scroll)
-            }
-
-        },
-        false
-    );
 </script>

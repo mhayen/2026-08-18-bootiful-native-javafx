@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <VBox spacing="16.0" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
@@ -12,8 +14,17 @@
     <HBox alignment="CENTER_LEFT" spacing="12.0">
         <Label fx:id="naam" styleClass="formulier-naam"/>
         <HBox HBox.hgrow="ALWAYS"/>
-        <Button fx:id="save" text="Save"/>
-        <Button fx:id="updateTeksten" text="Update teksten"/>
+        <MenuBar>
+            <menus>
+                <Menu text="Acties">
+                    <items>
+                        <MenuItem fx:id="save" text="Save"/>
+                        <MenuItem fx:id="updateTeksten" text="Update teksten"/>
+                        <MenuItem fx:id="generateHtml" text="Genereer HTML"/>
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
     </HBox>
     <VBox spacing="8.0">
         <Label text="Instellingen" styleClass="section-title"/>
