@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<VBox spacing="16.0" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+    <padding>
+        <Insets top="16.0" right="16.0" bottom="16.0" left="16.0"/>
+    </padding>
+    <Label fx:id="naam" styleClass="greeting"/>
+    <VBox spacing="8.0">
+        <Label text="Instellingen" styleClass="section-title"/>
+        <VBox fx:id="instellingenBody"/>
+    </VBox>
+    <VBox spacing="8.0">
+        <Label text="Datums" styleClass="section-title"/>
+        <VBox fx:id="datumsBody"/>
+    </VBox>
+    <VBox spacing="8.0">
+        <Label text="Dagdelen" styleClass="section-title"/>
+        <Label fx:id="dagdelen"/>
+    </VBox>
+    <VBox spacing="8.0">
+        <Label text="Afhankelijkheden" styleClass="section-title"/>
+        <Label fx:id="afhankelijkheden"/>
+    </VBox>
+    <VBox spacing="8.0">
+        <Label text="Navigatie" styleClass="section-title"/>
+        <VBox fx:id="navigatieBody"/>
+    </VBox>
+</VBox>
