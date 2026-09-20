@@ -33,6 +33,7 @@ class StageInitializer {
 
     private static final String DARK_THEME = "/theme-dark.css";
     private static final String LIGHT_THEME = "/theme-light.css";
+    private static final String TITLE = "Formulier beheer";
 
     private final SystemBrowserOAuth2Login login;
     private final GoogleDriveService googleDrive;
@@ -41,7 +42,6 @@ class StageInitializer {
     private final ObservableList<DriveFile> spreadsheets = FXCollections.observableArrayList();
     private final Map<String, Tab> openTabs = new HashMap<>();
 
-    private Label greeting;
     private TextField spreadsheetFilter;
     private ListView<DriveFile> spreadsheetList;
     private TabPane tabs;
@@ -64,7 +64,6 @@ class StageInitializer {
         }
         var scene = new Scene(root);
 
-        this.greeting = (Label) scene.lookup("#greeting");
         this.spreadsheetFilter = (TextField) scene.lookup("#spreadsheetFilter");
         this.spreadsheetList = (ListView<DriveFile>) scene.lookup("#spreadsheetList");
         this.tabs = (TabPane) scene.lookup("#tabs");
@@ -102,7 +101,7 @@ class StageInitializer {
         });
 
         var stage = event.stage();
-        stage.setTitle("Formulier beheer");
+        stage.setTitle(TITLE);
         stage.setScene(scene);
         stage.setOnHidden(_ -> System.exit(0));
         stage.show();
@@ -112,7 +111,7 @@ class StageInitializer {
     @EventListener
     void on(UserSignedInEvent event) {
         Threads.onTheFxThread(() -> {
-            this.greeting.setText("Hello, " + event.name() + ".");
+            this.status.setText("Ingelogd als " + event.name());
             this.spreadsheetFilter.setDisable(false);
             this.spreadsheetList.setDisable(false);
         });
@@ -151,7 +150,7 @@ class StageInitializer {
 
         Threads.offTheFxThread(() -> {
             var formulier = this.googleDrive.fetchFormulier(file.id());
-            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(formulier)));
+            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(file.id(), formulier, this.googleDrive)));
         }, ex -> tab.setContent(new Label("Failed to load: " + ex.getMessage())));
     }
 

@@ -39,6 +39,16 @@ public class GoogleDriveService {
         return formulierMapper.toFormulier(spreadSheet);
     }
 
+    public void updateCells(String spreadsheetId, Map<String, Object> valuesByA1Notation) {
+        valuesByA1Notation.forEach((a1Notation, value) -> {
+            var body = Map.<String, Object>of(
+                    "range", a1Notation,
+                    "majorDimension", "ROWS",
+                    "values", List.of(List.of(value)));
+            drive.updateDataInSpreadSheet(spreadsheetId, a1Notation, "USER_ENTERED", body);
+        });
+    }
+
     public String runScript() {
         Map<String, Object> parameters = Map.of("function", "runFunctionMetParameter",
                 "parameters", List.of("input"));

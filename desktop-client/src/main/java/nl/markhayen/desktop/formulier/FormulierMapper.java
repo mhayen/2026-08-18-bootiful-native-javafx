@@ -8,8 +8,14 @@ import nl.markhayen.desktop.model.SpreadSheet;
 import nl.markhayen.desktop.model.SpreadSheetProperties;
 import nl.markhayen.desktop.model.UserEnteredValue;
 import nl.markhayen.desktop.model.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -25,6 +32,10 @@ import java.util.stream.Stream;
  * names) to and from a {@link Formulier}. Sheets are matched by title ("velden", "navigatie",
  * "instellingen", "datums", "dagdelen", "afhankelijkheden"); header cells use snake_case and are
  * translated to/from the camelCase record component names.
+ * <p>
+ * Every editable scalar field is read into a {@link Cell}, which carries the A1 notation of the
+ * cell it came from (e.g. {@code "instellingen!B2"}) alongside its value, so a later edit can be
+ * written back to exactly that cell.
  * <p>
  * {@link #toSpreadSheet(Formulier)} always emits every column a target record type has, so that
  * round-tripping a {@link Formulier} through {@link #toSpreadSheet} and back through
@@ -34,7 +45,7 @@ import java.util.stream.Stream;
  */
 @Component
 public class FormulierMapper {
-
+    private static final Logger log = LoggerFactory.getLogger(FormulierMapper.class);
     private static final List<String> VELDEN_HEADER = List.of(
             "sectie", "sectie_naam", "titel", "subsectie", "veldnaam", "naam", "afkorting", "afkorting_kleur",
             "volgorde", "soort", "alleenlezen", "actief", "verplicht", "tekst", "beschrijving", "afhankelijk",
@@ -52,6 +63,12 @@ public class FormulierMapper {
     private static final List<String> DAGDELEN_HEADER = List.of("dagdeel");
 
     private static final List<String> AFHANKELIJKHEDEN_HEADER = List.of("aantal_kindermenus");
+
+    /**
+     * Google Sheets' SERIAL_NUMBER epoch: day 0 is December 30th 1899.
+     */
+    private static final LocalDate SERIAL_NUMBER_EPOCH = LocalDate.of(1899, 12, 30);
+    private static final double SECONDS_PER_DAY = 24 * 60 * 60;
 
     public Formulier toFormulier(SpreadSheet spreadSheet) {
         String formulierNaam = spreadSheet.properties() == null ? null : spreadSheet.properties().title();
@@ -87,7 +104,7 @@ public class FormulierMapper {
         Map<String, List<Velden>> veldenBySectie = new LinkedHashMap<>();
         Map<String, String> titelBySectie = new LinkedHashMap<>();
         Map<String, String> sectieNaamBySectie = new LinkedHashMap<>();
-        for (Map<String, String> row : readRows(sheet.get())) {
+        for (Map<String, CellValue> row : readRows(sheet.get())) {
             String sectie = str(row, "sectie");
             veldenBySectie.computeIfAbsent(sectie, _ -> new ArrayList<>()).add(toVelden(row));
             titelBySectie.putIfAbsent(sectie, str(row, "titel"));
@@ -101,7 +118,7 @@ public class FormulierMapper {
         return result;
     }
 
-    private Velden toVelden(Map<String, String> row) {
+    private Velden toVelden(Map<String, CellValue> row) {
         return new Velden(
                 str(row, "veldnaam"), str(row, "sectie"), str(row, "sectieNaam"), str(row, "subsectie"),
                 str(row, "naam"), str(row, "afkorting"), str(row, "afkortingKleur"),
@@ -116,8 +133,9 @@ public class FormulierMapper {
                 .orElse(List.of())
                 .stream()
                 .map(row -> new Navigatie(
-                        integer(row, "volgorde"), str(row, "sectie"), str(row, "titel"), bool(row, "validatie"),
-                        str(row, "conditieVeld"), str(row, "condities"), bool(row, "actief"), str(row, "stap")))
+                        cell(row, "volgorde", FormulierMapper::toInteger), cell(row, "sectie"), cell(row, "titel"),
+                        cell(row, "validatie", FormulierMapper::toBoolean), cell(row, "conditieVeld"),
+                        cell(row, "condities"), cell(row, "actief", FormulierMapper::toBoolean), cell(row, "stap")))
                 .toList();
     }
 
@@ -126,16 +144,17 @@ public class FormulierMapper {
                 .map(this::readRows)
                 .orElse(List.of())
                 .stream()
-                .map(row -> new Datums(str(row, "kort"), str(row, "lang"), str(row, "start"), str(row, "eind")))
+                .map(row -> new Datums(cell(row, "kort"), cell(row, "lang"),
+                        cell(row, "start", FormulierMapper::toDateTime), cell(row, "eind", FormulierMapper::toDateTime)))
                 .toList();
     }
 
-    private List<String> readDagdelen(SpreadSheet spreadSheet) {
+    private List<Cell<String>> readDagdelen(SpreadSheet spreadSheet) {
         return findSheet(spreadSheet, "dagdelen")
                 .map(this::readRows)
                 .orElse(List.of())
                 .stream()
-                .map(row -> str(row, "dagdeel"))
+                .map(row -> cell(row, "dagdeel"))
                 .toList();
     }
 
@@ -144,8 +163,8 @@ public class FormulierMapper {
         if (sheet.isEmpty()) {
             return null;
         }
-        List<String> aantalKindermenus = readRows(sheet.get()).stream()
-                .map(row -> str(row, "aantalKindermenus"))
+        List<Cell<String>> aantalKindermenus = readRows(sheet.get()).stream()
+                .map(row -> cell(row, "aantalKindermenus"))
                 .toList();
         return new Afhankelijkheden(aantalKindermenus);
     }
@@ -155,19 +174,20 @@ public class FormulierMapper {
         if (sheet.isEmpty()) {
             return null;
         }
-        List<Map<String, String>> rows = readRows(sheet.get());
+        List<Map<String, CellValue>> rows = readRows(sheet.get());
         if (rows.isEmpty()) {
             return null;
         }
-        Map<String, String> row = rows.getFirst();
-        String resultaatSpreadsheetId = row.get("resultaatSpreadsheetId");
+        Map<String, CellValue> row = rows.getFirst();
+        CellValue resultaatSpreadsheetId = row.get("resultaatSpreadsheetId");
         if (resultaatSpreadsheetId == null) {
             // legacy sheets name this column "result_spreadsheet" instead
             resultaatSpreadsheetId = row.get("resultSpreadsheet");
         }
         return new Instellingen(
-                bool(row, "actief"), str(row, "logoFilename"), str(row, "naamAfzender"), str(row, "emailOnderwerp"),
-                str(row, "antwoordEmail"), str(row, "kopieNaar"), str(row, "apiToken"), resultaatSpreadsheetId);
+                cell(row, "actief", FormulierMapper::toBoolean), cell(row, "logoFilename"),
+                cell(row, "naamAfzender"), cell(row, "emailOnderwerp"), cell(row, "antwoordEmail"),
+                cell(row, "kopieNaar"), cell(row, "apiToken"), toCell(resultaatSpreadsheetId));
     }
 
     // ---- write: Formulier -> SpreadSheet -------------------------------------------------------
@@ -193,8 +213,9 @@ public class FormulierMapper {
         List<List<Object>> rows = new ArrayList<>();
         if (navigatie != null) {
             for (Navigatie n : navigatie) {
-                rows.add(Arrays.asList(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(),
-                        n.condities(), n.actief(), n.stap()));
+                rows.add(Arrays.asList(value(n.volgorde()), value(n.sectie()), value(n.titel()),
+                        value(n.validatie()), value(n.conditieVeld()), value(n.condities()), value(n.actief()),
+                        value(n.stap())));
             }
         }
         return sheet("navigatie", 1, NAVIGATIE_HEADER, rows);
@@ -204,9 +225,10 @@ public class FormulierMapper {
         List<List<Object>> rows = new ArrayList<>();
         if (instellingen != null) {
             rows.add(Arrays.asList(
-                    instellingen.actief(), instellingen.logoFilename(), instellingen.naamAfzender(),
-                    instellingen.emailOnderwerp(), instellingen.antwoordEmail(), instellingen.kopieNaar(),
-                    instellingen.apiToken(), instellingen.resultaatSpreadsheetId()));
+                    value(instellingen.actief()), value(instellingen.logoFilename()),
+                    value(instellingen.naamAfzender()), value(instellingen.emailOnderwerp()),
+                    value(instellingen.antwoordEmail()), value(instellingen.kopieNaar()),
+                    value(instellingen.apiToken()), value(instellingen.resultaatSpreadsheetId())));
         }
         return sheet("instellingen", 2, INSTELLINGEN_HEADER, rows);
     }
@@ -215,17 +237,17 @@ public class FormulierMapper {
         List<List<Object>> rows = new ArrayList<>();
         if (datums != null) {
             for (Datums d : datums) {
-                rows.add(Arrays.asList(d.kort(), d.lang(), d.start(), d.eind()));
+                rows.add(Arrays.asList(value(d.kort()), value(d.lang()), value(d.start()), value(d.eind())));
             }
         }
         return sheet("datums", 3, DATUMS_HEADER, rows);
     }
 
-    private Sheets writeDagdelen(List<String> dagdelen) {
+    private Sheets writeDagdelen(List<Cell<String>> dagdelen) {
         List<List<Object>> rows = new ArrayList<>();
         if (dagdelen != null) {
-            for (String d : dagdelen) {
-                rows.add(Collections.singletonList(d));
+            for (Cell<String> d : dagdelen) {
+                rows.add(Collections.singletonList(value(d)));
             }
         }
         return sheet("dagdelen", 4, DAGDELEN_HEADER, rows);
@@ -234,14 +256,44 @@ public class FormulierMapper {
     private Sheets writeAfhankelijkheden(Afhankelijkheden afhankelijkheden) {
         List<List<Object>> rows = new ArrayList<>();
         if (afhankelijkheden != null && afhankelijkheden.aantalKindermenus() != null) {
-            for (String a : afhankelijkheden.aantalKindermenus()) {
-                rows.add(Collections.singletonList(a));
+            for (Cell<String> a : afhankelijkheden.aantalKindermenus()) {
+                rows.add(Collections.singletonList(value(a)));
             }
         }
         return sheet("afhankelijkheden", 5, AFHANKELIJKHEDEN_HEADER, rows);
     }
 
+    private static <T> T value(Cell<T> cell) {
+        return cell == null ? null : cell.value();
+    }
+
     // ---- generic sheet <-> rows-of-columns plumbing --------------------------------------------
+
+    /**
+     * A cell's text value together with the A1 notation of the cell it was read from.
+     */
+    private record CellValue(String text, String a1) {
+    }
+
+    private static Cell<String> cell(Map<String, CellValue> row, String key) {
+        return cell(row, key, s -> s);
+    }
+
+    private static <T> Cell<T> cell(Map<String, CellValue> row, String key, Function<String, T> parse) {
+        CellValue cellValue = row.get(key);
+        return toCell(cellValue, parse);
+    }
+
+    private static Cell<String> toCell(CellValue cellValue) {
+        return toCell(cellValue, s -> s);
+    }
+
+    private static <T> Cell<T> toCell(CellValue cellValue, Function<String, T> parse) {
+        if (cellValue == null) {
+            return new Cell<>(null, null);
+        }
+        return new Cell<>(parse.apply(cellValue.text()), cellValue.a1());
+    }
 
     private static Optional<Sheets> findSheet(SpreadSheet spreadSheet, String title) {
         if (spreadSheet.sheets() == null) {
@@ -252,7 +304,7 @@ public class FormulierMapper {
                 .findFirst();
     }
 
-    private List<Map<String, String>> readRows(Sheets sheet) {
+    private List<Map<String, CellValue>> readRows(Sheets sheet) {
         List<RowData> allRows = sheet.data() == null ? List.of() : sheet.data().stream()
                 .filter(Objects::nonNull)
                 .flatMap(d -> d.rowData() == null ? Stream.empty() : d.rowData().stream())
@@ -266,16 +318,32 @@ public class FormulierMapper {
         for (int c = 0; c < columnCount; c++) {
             headers.add(snakeToCamel(cellText(headerRow, c)));
         }
-        List<Map<String, String>> rows = new ArrayList<>(allRows.size() - 1);
+        String sheetTitle = sheet.properties() == null ? null : sheet.properties().title();
+        List<Map<String, CellValue>> rows = new ArrayList<>(allRows.size() - 1);
         for (int r = 1; r < allRows.size(); r++) {
             RowData dataRow = allRows.get(r);
-            Map<String, String> row = new LinkedHashMap<>();
+            int sheetRowNumber = r + 1;
+            Map<String, CellValue> row = new LinkedHashMap<>();
             for (int c = 0; c < headers.size(); c++) {
-                row.put(headers.get(c), cellText(dataRow, c));
+                String a1 = sheetTitle == null ? null : sheetTitle + "!" + columnLetter(c) + sheetRowNumber;
+                row.put(headers.get(c), new CellValue(cellText(dataRow, c), a1));
             }
             rows.add(row);
         }
         return rows;
+    }
+
+    /**
+     * Converts a zero-based column index to its spreadsheet letter (0 -> A, 25 -> Z, 26 -> AA, ...).
+     */
+    private static String columnLetter(int index) {
+        StringBuilder letters = new StringBuilder();
+        int n = index;
+        do {
+            letters.insert(0, (char) ('A' + n % 26));
+            n = n / 26 - 1;
+        } while (n >= 0);
+        return letters.toString();
     }
 
     private static Sheets sheet(String title, int index, List<String> header, List<List<Object>> dataRows) {
@@ -288,10 +356,10 @@ public class FormulierMapper {
     }
 
     private static RowData rowOf(List<Object> values) {
-        return new RowData(values.stream().map(FormulierMapper::cell).toList());
+        return new RowData(values.stream().map(FormulierMapper::cellOf).toList());
     }
 
-    private static Values cell(Object value) {
+    private static Values cellOf(Object value) {
         return new Values(toUserEnteredValue(value));
     }
 
@@ -299,6 +367,7 @@ public class FormulierMapper {
         return switch (value) {
             case null -> null;
             case Boolean b -> new UserEnteredValue(null, null, b);
+            case LocalDateTime dateTime -> new UserEnteredValue(null, toSerialNumber(dateTime), null);
             case Number n -> new UserEnteredValue(null, n.doubleValue(), null);
             default -> new UserEnteredValue(String.valueOf(value), null, null);
         };
@@ -352,12 +421,16 @@ public class FormulierMapper {
         return camelCase.toString();
     }
 
-    private static String str(Map<String, String> row, String key) {
-        return row.get(key);
+    private static String str(Map<String, CellValue> row, String key) {
+        CellValue cellValue = row.get(key);
+        return cellValue == null ? null : cellValue.text();
     }
 
-    private static Integer integer(Map<String, String> row, String key) {
-        String value = row.get(key);
+    private static Integer integer(Map<String, CellValue> row, String key) {
+        return toInteger(str(row, key));
+    }
+
+    private static Integer toInteger(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
@@ -368,8 +441,50 @@ public class FormulierMapper {
         }
     }
 
-    private static Boolean bool(Map<String, String> row, String key) {
-        String value = row.get(key);
+    /**
+     * Parses a Google Sheets SERIAL_NUMBER value - a double whose whole part counts days since
+     * December 30th 1899 and whose fractional part counts the time of day - falling back to a full
+     * {@code LocalDateTime} or a bare date (taken as midnight) for hand-authored, unformatted cells
+     * that hold text instead of a real date-formatted cell.
+     */
+    private static LocalDateTime toDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String trimmed = value.trim();
+        try {
+            return fromSerialNumber(Double.parseDouble(trimmed));
+        } catch (NumberFormatException _) {
+            try {
+                return LocalDateTime.parse(trimmed);
+            } catch (DateTimeParseException _) {
+                try {
+                    return LocalDate.parse(trimmed).atStartOfDay();
+                } catch (DateTimeParseException _) {
+                    log.warn("Could not parse date from '{}'", value);
+                    return null;
+                }
+            }
+        }
+    }
+
+    private static LocalDateTime fromSerialNumber(double serialNumber) {
+        long days = (long) Math.floor(serialNumber);
+        long secondsOfDay = Math.round((serialNumber - days) * SECONDS_PER_DAY);
+        return SERIAL_NUMBER_EPOCH.plusDays(days).atStartOfDay().plusSeconds(secondsOfDay);
+    }
+
+    private static double toSerialNumber(LocalDateTime dateTime) {
+        long days = ChronoUnit.DAYS.between(SERIAL_NUMBER_EPOCH, dateTime.toLocalDate());
+        double fractionOfDay = dateTime.toLocalTime().toSecondOfDay() / SECONDS_PER_DAY;
+        return days + fractionOfDay;
+    }
+
+    private static Boolean bool(Map<String, CellValue> row, String key) {
+        return toBoolean(str(row, key));
+    }
+
+    private static Boolean toBoolean(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }

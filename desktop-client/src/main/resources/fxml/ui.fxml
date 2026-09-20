@@ -17,8 +17,7 @@
             <padding>
                 <Insets top="16.0" right="16.0" bottom="16.0" left="16.0"/>
             </padding>
-            <Label fx:id="greeting" text="Hello, stranger." styleClass="greeting"/>
-            <Button fx:id="signIn" defaultButton="true" text="Sign in with your browser"/>
+            <Button fx:id="signIn" defaultButton="true" text="Inloggen met Google"/>
             <Button fx:id="runScript" defaultButton="true" text="runScript"/>
             <HBox HBox.hgrow="ALWAYS"/>
             <CheckBox fx:id="lightTheme" text="Light theme"/>

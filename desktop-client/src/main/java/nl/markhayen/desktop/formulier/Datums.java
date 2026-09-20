@@ -1,4 +1,6 @@
 package nl.markhayen.desktop.formulier;
 
-public record Datums(String kort, String lang, String start, String eind) {
+import java.time.LocalDateTime;
+
+public record Datums(Cell<String> kort, Cell<String> lang, Cell<LocalDateTime> start, Cell<LocalDateTime> eind) {
 }

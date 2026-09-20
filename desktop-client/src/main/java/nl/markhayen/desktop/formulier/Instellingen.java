@@ -1,5 +1,6 @@
 package nl.markhayen.desktop.formulier;
 
-public record Instellingen(Boolean actief, String logoFilename, String naamAfzender, String emailOnderwerp,
-                           String antwoordEmail, String kopieNaar, String apiToken, String resultaatSpreadsheetId) {
+public record Instellingen(Cell<Boolean> actief, Cell<String> logoFilename, Cell<String> naamAfzender,
+                           Cell<String> emailOnderwerp, Cell<String> antwoordEmail, Cell<String> kopieNaar,
+                           Cell<String> apiToken, Cell<String> resultaatSpreadsheetId) {
 }
