@@ -54,8 +54,6 @@ class FormulierMapperTest {
 
         // no "datums"/"dagdelen"/"afhankelijkheden" sheets exist in this particular spreadsheet
         assertThat(formulier.datums()).isEmpty();
-        assertThat(formulier.dagdelen()).isEmpty();
-        assertThat(formulier.afhankelijkheden()).isNull();
     }
 
     @Test
@@ -67,8 +65,6 @@ class FormulierMapperTest {
                                 false, true, true, "Naam", "Uw naam", null, null, null, 10)))),
                 List.of(new Datums(cell("24 dec"), cell("24 december"),
                         cell(LocalDateTime.of(2026, 12, 24, 0, 0)), cell(LocalDateTime.of(2026, 12, 24, 18, 0)))),
-                List.of(cell("lunch"), cell("diner")),
-                new Afhankelijkheden(List.of(cell("1"), cell("2"), cell("3"))),
                 new Instellingen(cell(true), cell("logo.png"), cell("Afzender"), cell("Onderwerp"),
                         cell("antwoord@example.com"), cell("kopie@example.com"), cell("token123"),
                         cell("spreadsheet-id")),
@@ -88,12 +84,6 @@ class FormulierMapperTest {
         assertThat(datums.lang().value()).isEqualTo("24 december");
         assertThat(datums.start().value()).isEqualTo(LocalDateTime.of(2026, 12, 24, 0, 0));
         assertThat(datums.eind().value()).isEqualTo(LocalDateTime.of(2026, 12, 24, 18, 0));
-
-        assertThat(result.dagdelen()).extracting(Cell::value).containsExactly("lunch", "diner");
-        assertThat(result.dagdelen().getFirst().a1()).isEqualTo("dagdelen!A2");
-
-        assertThat(result.afhankelijkheden().aantalKindermenus())
-                .extracting(Cell::value).containsExactly("1", "2", "3");
 
         Instellingen instellingen = result.instellingen();
         assertThat(instellingen.actief().value()).isTrue();

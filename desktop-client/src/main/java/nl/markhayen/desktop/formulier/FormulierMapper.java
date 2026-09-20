@@ -18,7 +18,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,15 +59,11 @@ public class FormulierMapper {
 
     private static final List<String> DATUMS_HEADER = List.of("kort", "lang", "start", "eind");
 
-    private static final List<String> DAGDELEN_HEADER = List.of("dagdeel");
-
-    private static final List<String> AFHANKELIJKHEDEN_HEADER = List.of("aantal_kindermenus");
-
     /**
      * Google Sheets' SERIAL_NUMBER epoch: day 0 is December 30th 1899.
      */
     private static final LocalDate SERIAL_NUMBER_EPOCH = LocalDate.of(1899, 12, 30);
-    private static final double SECONDS_PER_DAY = 24 * 60 * 60;
+    private static final double SECONDS_PER_DAY = 24 * 60 * 60d;
 
     public Formulier toFormulier(SpreadSheet spreadSheet) {
         String formulierNaam = spreadSheet.properties() == null ? null : spreadSheet.properties().title();
@@ -76,8 +71,6 @@ public class FormulierMapper {
                 formulierNaam,
                 readSecties(spreadSheet),
                 readDatums(spreadSheet),
-                readDagdelen(spreadSheet),
-                readAfhankelijkheden(spreadSheet),
                 readInstellingen(spreadSheet),
                 readNavigatie(spreadSheet));
     }
@@ -88,9 +81,7 @@ public class FormulierMapper {
                 writeVelden(formulier.secties()),
                 writeNavigatie(formulier.navigatie()),
                 writeInstellingen(formulier.instellingen()),
-                writeDatums(formulier.datums()),
-                writeDagdelen(formulier.dagdelen()),
-                writeAfhankelijkheden(formulier.afhankelijkheden()));
+                writeDatums(formulier.datums()));
         return new SpreadSheet(properties, sheets);
     }
 
@@ -147,26 +138,6 @@ public class FormulierMapper {
                 .map(row -> new Datums(cell(row, "kort"), cell(row, "lang"),
                         cell(row, "start", FormulierMapper::toDateTime), cell(row, "eind", FormulierMapper::toDateTime)))
                 .toList();
-    }
-
-    private List<Cell<String>> readDagdelen(SpreadSheet spreadSheet) {
-        return findSheet(spreadSheet, "dagdelen")
-                .map(this::readRows)
-                .orElse(List.of())
-                .stream()
-                .map(row -> cell(row, "dagdeel"))
-                .toList();
-    }
-
-    private Afhankelijkheden readAfhankelijkheden(SpreadSheet spreadSheet) {
-        Optional<Sheets> sheet = findSheet(spreadSheet, "afhankelijkheden");
-        if (sheet.isEmpty()) {
-            return null;
-        }
-        List<Cell<String>> aantalKindermenus = readRows(sheet.get()).stream()
-                .map(row -> cell(row, "aantalKindermenus"))
-                .toList();
-        return new Afhankelijkheden(aantalKindermenus);
     }
 
     private Instellingen readInstellingen(SpreadSheet spreadSheet) {
@@ -241,26 +212,6 @@ public class FormulierMapper {
             }
         }
         return sheet("datums", 3, DATUMS_HEADER, rows);
-    }
-
-    private Sheets writeDagdelen(List<Cell<String>> dagdelen) {
-        List<List<Object>> rows = new ArrayList<>();
-        if (dagdelen != null) {
-            for (Cell<String> d : dagdelen) {
-                rows.add(Collections.singletonList(value(d)));
-            }
-        }
-        return sheet("dagdelen", 4, DAGDELEN_HEADER, rows);
-    }
-
-    private Sheets writeAfhankelijkheden(Afhankelijkheden afhankelijkheden) {
-        List<List<Object>> rows = new ArrayList<>();
-        if (afhankelijkheden != null && afhankelijkheden.aantalKindermenus() != null) {
-            for (Cell<String> a : afhankelijkheden.aantalKindermenus()) {
-                rows.add(Collections.singletonList(value(a)));
-            }
-        }
-        return sheet("afhankelijkheden", 5, AFHANKELIJKHEDEN_HEADER, rows);
     }
 
     private static <T> T value(Cell<T> cell) {

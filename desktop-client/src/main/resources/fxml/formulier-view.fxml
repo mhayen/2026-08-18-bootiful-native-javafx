@@ -23,14 +23,6 @@
         <VBox fx:id="datumsBody"/>
     </VBox>
     <VBox spacing="8.0">
-        <Label text="Dagdelen" styleClass="section-title"/>
-        <VBox fx:id="dagdelenBody"/>
-    </VBox>
-    <VBox spacing="8.0">
-        <Label text="Afhankelijkheden" styleClass="section-title"/>
-        <VBox fx:id="afhankelijkhedenBody"/>
-    </VBox>
-    <VBox spacing="8.0">
         <Label text="Navigatie" styleClass="section-title"/>
         <VBox fx:id="navigatieBody"/>
     </VBox>

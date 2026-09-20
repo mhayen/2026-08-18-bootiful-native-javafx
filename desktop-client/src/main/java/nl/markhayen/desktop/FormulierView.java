@@ -62,11 +62,6 @@ class FormulierView {
         ((VBox) root.lookup("#instellingenBody")).getChildren()
                 .setAll(instellingenView(formulier, pending, original));
         ((VBox) root.lookup("#datumsBody")).getChildren().setAll(datumsTable(formulier.datums(), pending, original));
-        ((VBox) root.lookup("#dagdelenBody")).getChildren()
-                .setAll(cellListView(formulier.dagdelen(), pending, original, "(geen dagdelen)"));
-        ((VBox) root.lookup("#afhankelijkhedenBody")).getChildren().setAll(cellListView(
-                formulier.afhankelijkheden() == null ? List.of() : formulier.afhankelijkheden().aantalKindermenus(),
-                pending, original, "(geen afhankelijkheden)"));
         ((VBox) root.lookup("#navigatieBody")).getChildren()
                 .setAll(navigatieTable(formulier.navigatie(), pending, original));
 
@@ -166,21 +161,6 @@ class FormulierView {
         return row + 1;
     }
 
-    private static Node cellListView(List<Cell<String>> cells, Map<String, Object> pending,
-                                      Map<String, String> original, String emptyText) {
-        if (cells.isEmpty()) {
-            return new Label(emptyText);
-        }
-        var box = new VBox(4);
-        for (Cell<String> cell : cells) {
-            var field = new TextField(cell.value() == null ? "" : cell.value());
-            recordOriginal(original, cell);
-            field.textProperty().addListener((_, _, newValue) -> track(pending, original, cell.a1(), newValue));
-            box.getChildren().add(field);
-        }
-        return box;
-    }
-
     private static Node datumsTable(List<Datums> datums, Map<String, Object> pending, Map<String, String> original) {
         if (datums.isEmpty()) {
             return new Label("(geen datums)");
@@ -220,7 +200,10 @@ class FormulierView {
         table.getColumns().add(editableColumn("Validatie", Navigatie::validatie, FormulierView::parseBoolean,
                 (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), c, n.conditieVeld(), n.condities(),
                         n.actief(), n.stap()), items, pending, original));
-        table.getColumns().add(editableColumn("Stap", Navigatie::stap, Function.identity(),
+        table.getColumns().add(editableColumn("Conditie Veld", Navigatie::conditieVeld, Function.identity(),
+                (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(),
+                        n.condities(), n.actief(), c), items, pending, original));
+        table.getColumns().add(editableColumn("Conditie", Navigatie::condities, Function.identity(),
                 (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(),
                         n.condities(), n.actief(), c), items, pending, original));
         table.setPrefHeight(rowHeight(navigatie.size()));
