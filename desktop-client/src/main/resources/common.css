@@ -20,6 +20,19 @@
     -fx-background-color: #7cc44b;
 }
 
+.icon-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 14px;
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.icon-button:hover {
+    -fx-background-color: #e5484d;
+    -fx-text-fill: white;
+}
+
 .list-cell:filled:selected {
     -fx-background-color: #6db33f;
     -fx-text-fill: white;

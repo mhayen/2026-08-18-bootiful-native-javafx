@@ -46,4 +46,10 @@ public interface GoogleDrive {
                                                 @PathVariable String range,
                                                 @RequestParam("valueInputOption") String valueInputOption,
                                                 @RequestBody Map<String, Object> request);
+
+    @PostExchange("https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}:append")
+    Map<String, Object> appendDataToSpreadSheet(@PathVariable String spreadsheetId,
+                                                @PathVariable String range,
+                                                @RequestParam("valueInputOption") String valueInputOption,
+                                                @RequestBody Map<String, Object> request);
 }

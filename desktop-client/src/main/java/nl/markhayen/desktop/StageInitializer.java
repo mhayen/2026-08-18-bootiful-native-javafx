@@ -163,9 +163,14 @@ class StageInitializer {
         this.tabs.getTabs().add(tab);
         this.tabs.getSelectionModel().select(tab);
 
+        loadFormulierInto(tab, file.id());
+    }
+
+    private void loadFormulierInto(Tab tab, String fileId) {
         Threads.offTheFxThread(() -> {
-            var formulier = this.googleDrive.fetchFormulier(file.id());
-            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(file.id(), formulier, this.googleDrive, this.status)));
+            var formulier = this.googleDrive.fetchFormulier(fileId);
+            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(fileId, formulier, this.googleDrive,
+                    this.status, () -> loadFormulierInto(tab, fileId))));
         }, ex -> tab.setContent(new Label("Failed to load: " + ex.getMessage())));
     }
 

@@ -123,6 +123,7 @@ public class FormulierMapper {
                 .map(this::readRows)
                 .orElse(List.of())
                 .stream()
+                .filter(FormulierMapper::hasAnyValue)
                 .map(row -> new Navigatie(
                         cell(row, "volgorde", FormulierMapper::toInteger), cell(row, "sectie"), cell(row, "titel"),
                         cell(row, "validatie", FormulierMapper::toBoolean), cell(row, "conditieVeld"),
@@ -135,6 +136,7 @@ public class FormulierMapper {
                 .map(this::readRows)
                 .orElse(List.of())
                 .stream()
+                .filter(FormulierMapper::hasAnyValue)
                 .map(row -> new Datums(cell(row, "kort"), cell(row, "lang"),
                         cell(row, "start", FormulierMapper::toDateTime), cell(row, "eind", FormulierMapper::toDateTime)))
                 .toList();
@@ -244,6 +246,14 @@ public class FormulierMapper {
             return new Cell<>(null, null);
         }
         return new Cell<>(parse.apply(cellValue.text()), cellValue.a1());
+    }
+
+    /**
+     * A row that's been cleared (e.g. via a per-cell delete that blanks every cell instead of
+     * removing the row) should be treated as absent rather than resurfacing as an all-null record.
+     */
+    private static boolean hasAnyValue(Map<String, CellValue> row) {
+        return row.values().stream().anyMatch(cv -> cv != null && cv.text() != null && !cv.text().isBlank());
     }
 
     private static Optional<Sheets> findSheet(SpreadSheet spreadSheet, String title) {

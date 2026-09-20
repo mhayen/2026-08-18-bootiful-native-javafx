@@ -1,5 +1,6 @@
 package nl.markhayen.desktop;
 
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,9 +11,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -32,6 +35,7 @@ import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,10 +48,13 @@ class FormulierView {
 
     private static final Logger log = LoggerFactory.getLogger(FormulierView.class);
     private static final Resource FXML = new ClassPathResource("/fxml/formulier-view.fxml");
+    private static final LocalDate SERIAL_NUMBER_EPOCH = LocalDate.of(1899, 12, 30);
+
     private FormulierView() {
     }
 
-    static Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status) {
+    static Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status,
+                       Runnable reload) {
         Parent root;
         try (var fxmlInputStream = FXML.getInputStream()) {
             root = new FXMLLoader().load(fxmlInputStream);
@@ -58,15 +65,18 @@ class FormulierView {
         Map<String, Object> pending = new LinkedHashMap<>();
         Map<String, String> original = new HashMap<>();
 
+        var datumsItems = FXCollections.observableArrayList(formulier.datums());
+        var navigatieItems = FXCollections.observableArrayList(formulier.navigatie());
+
         ((Label) root.lookup("#naam")).setText(formulier.formulierNaam());
         ((VBox) root.lookup("#instellingenBody")).getChildren()
                 .setAll(instellingenView(formulier, pending, original));
-        ((VBox) root.lookup("#datumsBody")).getChildren().setAll(datumsTable(formulier.datums(), pending, original));
+        ((VBox) root.lookup("#datumsBody")).getChildren().setAll(datumsSection(datumsItems, pending, original));
         ((VBox) root.lookup("#navigatieBody")).getChildren()
-                .setAll(navigatieTable(formulier.navigatie(), pending, original));
+                .setAll(navigatieSection(navigatieItems, pending, original));
 
         var save = (Button) root.lookup("#save");
-        save.setOnAction(_ -> save(spreadsheetId, googleDrive, save, pending, original));
+        save.setOnAction(_ -> save(spreadsheetId, googleDrive, save, pending, datumsItems, navigatieItems, reload));
         var updateTeksten = (Button) root.lookup("#updateTeksten");
         updateTeksten.setOnAction(_ -> runUpdateTeksten(formulier.formulierNaam(), googleDrive, status));
 
@@ -76,22 +86,25 @@ class FormulierView {
     }
 
     private static void save(String spreadsheetId, GoogleDriveService googleDrive, Button save,
-                              Map<String, Object> pending, Map<String, String> original) {
-        if (pending.isEmpty()) {
+                              Map<String, Object> pending, ObservableList<Datums> datumsItems,
+                              ObservableList<Navigatie> navigatieItems, Runnable reload) {
+        var changes = Map.copyOf(pending);
+        var newDatums = datumsItems.stream().filter(FormulierView::isNew).map(FormulierView::datumsRow).toList();
+        var newNavigatie = navigatieItems.stream().filter(FormulierView::isNew).map(FormulierView::navigatieRow).toList();
+        if (changes.isEmpty() && newDatums.isEmpty() && newNavigatie.isEmpty()) {
             return;
         }
-        var changes = Map.copyOf(pending);
         save.setDisable(true);
         Threads.offTheFxThread(() -> {
-            googleDrive.updateCells(spreadsheetId, changes);
+            if (!changes.isEmpty()) {
+                googleDrive.updateCells(spreadsheetId, changes);
+            }
+            googleDrive.appendRows(spreadsheetId, "datums", newDatums);
+            googleDrive.appendRows(spreadsheetId, "navigatie", newNavigatie);
             Threads.onTheFxThread(() -> {
-                changes.forEach((a1, value) -> {
-                    original.put(a1, (String) value);
-                    if (Objects.equals(pending.get(a1), value)) {
-                        pending.remove(a1);
-                    }
-                });
+                pending.clear();
                 save.setDisable(false);
+                reload.run();
             });
         }, _ -> save.setDisable(false));
     }
@@ -105,7 +118,9 @@ class FormulierView {
     /**
      * Records {@code newValue} as a pending, unsaved change for {@code a1}, unless it matches the
      * value the cell had when the formulier was loaded, in which case any earlier pending edit for
-     * that cell is dropped.
+     * that cell is dropped. Rows that don't exist on the sheet yet (added via "Add row", not yet
+     * saved) carry no A1, so edits to them are simply left in place in the row itself and are only
+     * sent to the server as part of the append batch on save.
      */
     private static void track(Map<String, Object> pending, Map<String, String> original, String a1,
                                String newValue) {
@@ -123,6 +138,40 @@ class FormulierView {
         if (cell != null && cell.a1() != null) {
             original.putIfAbsent(cell.a1(), raw(cell.value()));
         }
+    }
+
+    private static boolean isNew(Datums d) {
+        return d.kort().a1() == null && d.lang().a1() == null && d.start().a1() == null && d.eind().a1() == null;
+    }
+
+    private static boolean isNew(Navigatie n) {
+        return n.volgorde().a1() == null && n.sectie().a1() == null && n.titel().a1() == null
+                && n.validatie().a1() == null && n.conditieVeld().a1() == null && n.condities().a1() == null
+                && n.actief().a1() == null && n.stap().a1() == null;
+    }
+
+    private static List<Object> datumsRow(Datums d) {
+        return List.of(orBlank(d.kort().value()), orBlank(d.lang().value()),
+                orBlank(toSerialNumberOrNull(d.start().value())), orBlank(toSerialNumberOrNull(d.eind().value())));
+    }
+
+    private static List<Object> navigatieRow(Navigatie n) {
+        return List.of(orBlank(n.volgorde().value()), orBlank(n.sectie().value()), orBlank(n.titel().value()),
+                orBlank(n.validatie().value()), orBlank(n.conditieVeld().value()), orBlank(n.condities().value()),
+                orBlank(n.actief().value()), orBlank(n.stap().value()));
+    }
+
+    private static Object orBlank(@Nullable Object value) {
+        return value == null ? "" : value;
+    }
+
+    private static @Nullable Double toSerialNumberOrNull(@Nullable LocalDateTime value) {
+        if (value == null) {
+            return null;
+        }
+        long days = ChronoUnit.DAYS.between(SERIAL_NUMBER_EPOCH, value.toLocalDate());
+        double fractionOfDay = value.toLocalTime().toSecondOfDay() / 86_400d;
+        return days + fractionOfDay;
     }
 
     private static Node instellingenView(Formulier formulier, Map<String, Object> pending,
@@ -169,11 +218,8 @@ class FormulierView {
         return row + 1;
     }
 
-    private static Node datumsTable(List<Datums> datums, Map<String, Object> pending, Map<String, String> original) {
-        if (datums.isEmpty()) {
-            return new Label("(geen datums)");
-        }
-        var items = FXCollections.observableArrayList(datums);
+    private static Node datumsSection(ObservableList<Datums> items, Map<String, Object> pending,
+                                       Map<String, String> original) {
         var table = new TableView<>(items);
         table.setEditable(true);
         table.getColumns().add(editableColumn("Kort", Datums::kort, Function.identity(),
@@ -184,16 +230,18 @@ class FormulierView {
                 (d, c) -> new Datums(d.kort(), d.lang(), c, d.eind()), items, pending, original));
         table.getColumns().add(editableColumn("Eind", Datums::eind, FormulierView::parseDateTime,
                 (d, c) -> new Datums(d.kort(), d.lang(), d.start(), c), items, pending, original));
-        table.setPrefHeight(rowHeight(datums.size()));
-        return table;
+        table.getColumns().add(deleteColumn(items,
+                d -> List.of(d.kort(), d.lang(), d.start(), d.eind()), pending));
+        table.prefHeightProperty().bind(Bindings.size(items).multiply(28).add(32));
+
+        var addRow = new Button("Add row");
+        addRow.setOnAction(_ -> items.add(new Datums(blankCell(), blankCell(), blankCell(), blankCell())));
+
+        return new VBox(8, table, addRow);
     }
 
-    private static Node navigatieTable(List<Navigatie> navigatie, Map<String, Object> pending,
-                                        Map<String, String> original) {
-        if (navigatie.isEmpty()) {
-            return new Label("(geen navigatie)");
-        }
-        var items = FXCollections.observableArrayList(navigatie);
+    private static Node navigatieSection(ObservableList<Navigatie> items, Map<String, Object> pending,
+                                          Map<String, String> original) {
         var table = new TableView<>(items);
         table.setEditable(true);
         table.getColumns().add(editableColumn("Volgorde", Navigatie::volgorde, FormulierView::parseInteger,
@@ -209,13 +257,63 @@ class FormulierView {
                 (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), c, n.conditieVeld(), n.condities(),
                         n.actief(), n.stap()), items, pending, original));
         table.getColumns().add(editableColumn("Conditie Veld", Navigatie::conditieVeld, Function.identity(),
-                (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(),
-                        n.condities(), n.actief(), c), items, pending, original));
+                (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), n.validatie(), c,
+                        n.condities(), n.actief(), n.stap()), items, pending, original));
         table.getColumns().add(editableColumn("Conditie", Navigatie::condities, Function.identity(),
                 (n, c) -> new Navigatie(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(),
-                        n.condities(), n.actief(), c), items, pending, original));
-        table.setPrefHeight(rowHeight(navigatie.size()));
-        return table;
+                        c, n.actief(), n.stap()), items, pending, original));
+        table.getColumns().add(deleteColumn(items,
+                n -> List.of(n.volgorde(), n.sectie(), n.titel(), n.validatie(), n.conditieVeld(), n.condities(),
+                        n.actief(), n.stap()), pending));
+        table.prefHeightProperty().bind(Bindings.size(items).multiply(28).add(32));
+
+        var addRow = new Button("Add row");
+        addRow.setOnAction(_ -> items.add(new Navigatie(blankCell(), blankCell(), blankCell(), blankCell(),
+                blankCell(), blankCell(), blankCell(), blankCell())));
+
+        return new VBox(8, table, addRow);
+    }
+
+    private static <T> Cell<T> blankCell() {
+        return new Cell<>(null, null);
+    }
+
+    /**
+     * A "Delete" button column. Removes the row from {@code items} immediately; if the row already
+     * exists on the sheet (any of its cells has a real A1), also queues every one of its cells to be
+     * blanked out on save - rows are never structurally removed from the sheet, so a deleted row's
+     * cells are simply cleared and {@link nl.markhayen.desktop.formulier.FormulierMapper} skips
+     * fully-blank rows when reading, so it doesn't resurface.
+     */
+    private static <T> TableColumn<T, Void> deleteColumn(ObservableList<T> items,
+                                                          Function<T, List<Cell<?>>> cellsOf,
+                                                          Map<String, Object> pending) {
+        var column = new TableColumn<T, Void>("");
+        column.setCellFactory(_ -> new TableCell<>() {
+            private final Button delete = new Button("🗑");
+
+            {
+                delete.getStyleClass().add("icon-button");
+                delete.setTooltip(new Tooltip("Delete row"));
+                delete.setOnAction(_ -> {
+                    int index = getIndex();
+                    var item = items.get(index);
+                    for (Cell<?> cell : cellsOf.apply(item)) {
+                        if (cell.a1() != null) {
+                            pending.put(cell.a1(), "");
+                        }
+                    }
+                    items.remove(index);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void value, boolean empty) {
+                super.updateItem(value, empty);
+                setGraphic(empty ? null : delete);
+            }
+        });
+        return column;
     }
 
     /**
@@ -287,10 +385,6 @@ class FormulierView {
                 return null;
             }
         }
-    }
-
-    private static double rowHeight(int rowCount) {
-        return 32d + rowCount * 28;
     }
 
     /**

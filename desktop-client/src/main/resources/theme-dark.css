@@ -6,6 +6,10 @@
     -fx-text-fill: #e5e7eb;
 }
 
+.icon-button {
+    -fx-text-fill: #e5e7eb;
+}
+
 .subtle {
     -fx-text-fill: #9ca3af;
 }

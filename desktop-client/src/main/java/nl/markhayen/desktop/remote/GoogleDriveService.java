@@ -50,6 +50,14 @@ public class GoogleDriveService {
         });
     }
 
+    public void appendRows(String spreadsheetId, String sheetTitle, List<List<Object>> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        var body = Map.<String, Object>of("values", rows);
+        drive.appendDataToSpreadSheet(spreadsheetId, sheetTitle, "USER_ENTERED", body);
+    }
+
     public String runUpdateTeksten(String formulierNaam) {
         Map<String, Object> parameters = Map.of("function", "updateTeksten",
                 "parameters", List.of(formulierNaam));
