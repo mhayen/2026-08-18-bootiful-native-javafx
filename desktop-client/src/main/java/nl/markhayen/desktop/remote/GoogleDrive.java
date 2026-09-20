@@ -2,6 +2,7 @@ package nl.markhayen.desktop.remote;
 
 import nl.markhayen.desktop.model.DriveFile;
 import nl.markhayen.desktop.model.NewFile;
+import nl.markhayen.desktop.model.RunScriptResponse;
 import nl.markhayen.desktop.model.SearchResponse;
 import nl.markhayen.desktop.model.SpreadSheet;
 import org.springframework.security.oauth2.client.annotation.ClientRegistrationId;
@@ -38,7 +39,7 @@ public interface GoogleDrive {
     DriveFile copyFile(@PathVariable String fileId, @RequestBody NewFile newFile);
 
     @PostExchange("https://script.googleapis.com/v1/scripts/{deploymentId}:run")
-    Map<String, Object> runScript(@PathVariable String deploymentId, @RequestBody Map<String, Object> request);
+    RunScriptResponse runScript(@PathVariable String deploymentId, @RequestBody Map<String, Object> request);
 
     @PutExchange("https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}")
     Map<String, Object> updateDataInSpreadSheet(@PathVariable String spreadsheetId,

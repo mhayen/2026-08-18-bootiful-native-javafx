@@ -21,6 +21,7 @@ import nl.markhayen.desktop.formulier.Datums;
 import nl.markhayen.desktop.formulier.Formulier;
 import nl.markhayen.desktop.formulier.Navigatie;
 import nl.markhayen.desktop.remote.GoogleDriveService;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -43,11 +44,10 @@ class FormulierView {
 
     private static final Logger log = LoggerFactory.getLogger(FormulierView.class);
     private static final Resource FXML = new ClassPathResource("/fxml/formulier-view.fxml");
-
     private FormulierView() {
     }
 
-    static Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive) {
+    static Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status) {
         Parent root;
         try (var fxmlInputStream = FXML.getInputStream()) {
             root = new FXMLLoader().load(fxmlInputStream);
@@ -67,6 +67,8 @@ class FormulierView {
 
         var save = (Button) root.lookup("#save");
         save.setOnAction(_ -> save(spreadsheetId, googleDrive, save, pending, original));
+        var updateTeksten = (Button) root.lookup("#updateTeksten");
+        updateTeksten.setOnAction(_ -> runUpdateTeksten(formulier.formulierNaam(), googleDrive, status));
 
         var scroll = new ScrollPane(root);
         scroll.setFitToWidth(true);
@@ -91,7 +93,13 @@ class FormulierView {
                 });
                 save.setDisable(false);
             });
-        }, ex -> save.setDisable(false));
+        }, _ -> save.setDisable(false));
+    }
+
+    private static void runUpdateTeksten(String formulierNaam, GoogleDriveService googleDrive, Label status) {
+        Threads.onTheFxThread(() -> status.setText("Started update teksten"));
+        String s = googleDrive.runUpdateTeksten(formulierNaam);
+        Threads.onTheFxThread(() -> status.setText(s));
     }
 
     /**
@@ -250,7 +258,7 @@ class FormulierView {
         }
     }
 
-    private static Boolean parseBoolean(String value) {
+    private static @Nullable Boolean parseBoolean(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }

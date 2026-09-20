@@ -11,7 +11,13 @@ spring.security.oauth2.client:
       client-authentication-method: client_secret_basic
       authorization-grant-type: authorization_code
       redirect-uri: http://127.0.0.1:8385/login/oauth2/code/google
-      scope: [ openid, profile, email, https://www.googleapis.com/auth/drive ]
+      scope:
+        - openid
+        - profile
+        - email
+        - https://www.googleapis.com/auth/drive
+        - https://www.googleapis.com/auth/script.send_mail
+        - https://www.googleapis.com/auth/spreadsheets
       provider: google-login
   provider:
     google-login:
@@ -23,4 +29,7 @@ spring.security.oauth2.client:
       jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
 
 
-implementation-id: AKfycbwCqy6fyMzNs6RwjB2VUfF6m2qbxi18KTEqeAQgUaRVVte-PkaDmL4EALkQfDwNLyFc
+# Formulier
+implementation-id: AKfycbyAFMU7cxmosMqHCVnbUYhsLloevVWTawTJiQQD8hFyXrfT5gqPNeAxAZDBIDnITEA2
+# runFunction
+#implementation-id: AKfycbwCqy6fyMzNs6RwjB2VUfF6m2qbxi18KTEqeAQgUaRVVte-PkaDmL4EALkQfDwNLyFc

@@ -131,9 +131,11 @@ class StageInitializer {
     }
 
     private void runScript() {
-        String s = this.googleDrive.runScript();
+        String s = this.googleDrive.runFunctionMetParameter();
         Threads.onTheFxThread(() -> this.status.setText(s));
     }
+
+
 
     private void openFormulierTab(DriveFile file) {
         var existing = this.openTabs.get(file.id());
@@ -150,7 +152,7 @@ class StageInitializer {
 
         Threads.offTheFxThread(() -> {
             var formulier = this.googleDrive.fetchFormulier(file.id());
-            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(file.id(), formulier, this.googleDrive)));
+            Threads.onTheFxThread(() -> tab.setContent(FormulierView.build(file.id(), formulier, this.googleDrive, this.status)));
         }, ex -> tab.setContent(new Label("Failed to load: " + ex.getMessage())));
     }
 

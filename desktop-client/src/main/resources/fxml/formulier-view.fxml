@@ -13,6 +13,7 @@
         <Label fx:id="naam" styleClass="formulier-naam"/>
         <HBox HBox.hgrow="ALWAYS"/>
         <Button fx:id="save" text="Save"/>
+        <Button fx:id="updateTeksten" text="Update teksten"/>
     </HBox>
     <VBox spacing="8.0">
         <Label text="Instellingen" styleClass="section-title"/>

@@ -3,6 +3,7 @@ package nl.markhayen.desktop.remote;
 import nl.markhayen.desktop.formulier.Formulier;
 import nl.markhayen.desktop.formulier.FormulierMapper;
 import nl.markhayen.desktop.model.DriveFile;
+import nl.markhayen.desktop.model.RunScriptResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +42,7 @@ public class GoogleDriveService {
 
     public void updateCells(String spreadsheetId, Map<String, Object> valuesByA1Notation) {
         valuesByA1Notation.forEach((a1Notation, value) -> {
-            var body = Map.<String, Object>of(
+            var body = Map.of(
                     "range", a1Notation,
                     "majorDimension", "ROWS",
                     "values", List.of(List.of(value)));
@@ -49,11 +50,24 @@ public class GoogleDriveService {
         });
     }
 
-    public String runScript() {
+    public String runUpdateTeksten(String formulierNaam) {
+        Map<String, Object> parameters = Map.of("function", "updateTeksten",
+                "parameters", List.of(formulierNaam));
+        RunScriptResponse executed = drive.runScript(implementationId, parameters);
+        if (executed.error() != null) {
+            throw new RuntimeException(executed.error().message());
+        }
+        return executed.response().result();
+    }
+
+    public String runFunctionMetParameter() {
         Map<String, Object> parameters = Map.of("function", "runFunctionMetParameter",
                 "parameters", List.of("input"));
-        Map<String, Object> executed = drive.runScript(implementationId, parameters);
-        IO.println(executed.get("response").toString());
-        return executed.get("response").toString();
+        RunScriptResponse executed = drive.runScript(implementationId, parameters);
+        if (executed.error() != null) {
+            IO.println(executed.error());
+            throw new RuntimeException(executed.error().message());
+        }
+        return executed.response().result();
     }
 }
