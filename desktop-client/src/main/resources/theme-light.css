@@ -1,0 +1,64 @@
+.root {
+    -fx-background-color: linear-gradient(to bottom, #f9fafb, #e5e7eb);
+}
+
+.label, .check-box {
+    -fx-text-fill: #111827;
+}
+
+.subtle {
+    -fx-text-fill: #6b7280;
+}
+
+.text-field {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #111827;
+    -fx-prompt-text-fill: #9ca3af;
+}
+
+.list-view {
+    -fx-background-color: #f3f4f6;
+    -fx-control-inner-background: #ffffff;
+}
+
+.list-cell {
+    -fx-text-fill: #111827;
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab-header-area .tab {
+    -fx-background-color: #e5e7eb;
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: #111827;
+}
+
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-control-inner-background: #ffffff;
+}
+
+.table-view .column-header-background,
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: #e5e7eb;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #111827;
+}
+
+.table-row-cell {
+    -fx-background-color: #ffffff;
+    -fx-control-inner-background: #ffffff;
+    -fx-table-cell-border-color: #d1d5db;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f3f4f6;
+}
+
+.table-cell {
+    -fx-text-fill: #111827;
+}

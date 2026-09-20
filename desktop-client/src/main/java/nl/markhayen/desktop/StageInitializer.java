@@ -9,6 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -20,7 +21,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
 import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
 import nl.markhayen.desktop.auth.UserSignedInEvent;
 import nl.markhayen.desktop.formulier.Datums;
@@ -43,6 +43,9 @@ import static nl.markhayen.desktop.DesktopApplication.CLIENT_REGISTRATION_ID;
 @Component
 class StageInitializer {
 
+    private static final String DARK_THEME = "/theme-dark.css";
+    private static final String LIGHT_THEME = "/theme-light.css";
+
     private final SystemBrowserOAuth2Login login;
     private final GoogleDriveService googleDrive;
     private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
@@ -54,7 +57,7 @@ class StageInitializer {
     private TextField spreadsheetFilter;
     private ListView<DriveFile> spreadsheetList;
     private TabPane tabs;
-    private Text status;
+    private Label status;
 
     StageInitializer(SystemBrowserOAuth2Login login, //
                      GoogleDriveService googleDrive) {
@@ -82,8 +85,12 @@ class StageInitializer {
         signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
         Button runScript = (Button) scene.lookup("#runScript"); //
         runScript.setOnAction(_ -> Threads.offTheFxThread(this::runScript));
-        status = (Text) scene.lookup("#status");
+        status = (Label) scene.lookup("#status");
         status.setText("Gestart");
+
+        var lightTheme = (CheckBox) scene.lookup("#lightTheme");
+        applyTheme(scene, lightTheme.isSelected());
+        lightTheme.selectedProperty().addListener((_, _, isLight) -> applyTheme(scene, isLight));
 
         this.spreadsheetList.setCellFactory(_ -> new ListCell<>() {
             @Override
@@ -127,6 +134,13 @@ class StageInitializer {
     private void loadSpreadsheets() {
         var files = this.googleDrive.listSpreadsheets();
         Threads.onTheFxThread(() -> this.spreadsheets.setAll(files));
+    }
+
+    private void applyTheme(Scene scene, boolean light) {
+        scene.getStylesheets().removeAll(
+                getClass().getResource(DARK_THEME).toExternalForm(),
+                getClass().getResource(LIGHT_THEME).toExternalForm());
+        scene.getStylesheets().add(getClass().getResource(light ? LIGHT_THEME : DARK_THEME).toExternalForm());
     }
 
     private void runScript() {

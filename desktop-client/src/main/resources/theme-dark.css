@@ -2,31 +2,12 @@
     -fx-background-color: linear-gradient(to bottom, #1f2937, #111827);
 }
 
-.label {
+.label, .check-box {
     -fx-text-fill: #e5e7eb;
 }
 
-.greeting {
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-}
-
 .subtle {
-    -fx-font-size: 12px;
     -fx-text-fill: #9ca3af;
-}
-
-.button {
-    -fx-background-color: #6db33f;
-    -fx-text-fill: white;
-    -fx-font-size: 14px;
-    -fx-padding: 8 20 8 20;
-    -fx-background-radius: 6;
-    -fx-cursor: hand;
-}
-
-.button:hover {
-    -fx-background-color: #7cc44b;
 }
 
 .text-field {
@@ -45,30 +26,12 @@
     -fx-background-color: transparent;
 }
 
-.list-cell:filled:selected {
-    -fx-background-color: #6db33f;
-    -fx-text-fill: white;
-}
-
 .tab-pane .tab-header-area .tab {
     -fx-background-color: #1f2937;
 }
 
-.tab-pane .tab:selected {
-    -fx-background-color: #6db33f;
-}
-
 .tab-pane .tab-label {
     -fx-text-fill: #e5e7eb;
-}
-
-.section-title {
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-}
-
-.scroll-pane, .scroll-pane > .viewport {
-    -fx-background-color: transparent;
 }
 
 .table-view {
@@ -98,8 +61,4 @@
 
 .table-cell {
     -fx-text-fill: #e5e7eb;
-}
-
-.table-row-cell:selected .table-cell {
-    -fx-text-fill: white;
 }

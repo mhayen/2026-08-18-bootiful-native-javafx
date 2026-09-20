@@ -1,0 +1,43 @@
+.greeting {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.subtle {
+    -fx-font-size: 12px;
+}
+
+.button {
+    -fx-background-color: #6db33f;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 8 20 8 20;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #7cc44b;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #6db33f;
+    -fx-text-fill: white;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #6db33f;
+}
+
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: white;
+}
