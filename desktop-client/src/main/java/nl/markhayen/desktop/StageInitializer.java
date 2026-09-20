@@ -14,6 +14,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 import nl.markhayen.desktop.auth.SystemBrowserOAuth2Login;
 import nl.markhayen.desktop.auth.UserSignedInEvent;
 import nl.markhayen.desktop.model.DriveFile;
@@ -23,8 +24,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static nl.markhayen.desktop.DesktopApplication.CLIENT_REGISTRATION_ID;
 
@@ -37,13 +41,13 @@ class StageInitializer {
 
     private final SystemBrowserOAuth2Login login;
     private final GoogleDriveService googleDrive;
+    private final Resource loginFxml = new ClassPathResource("/fxml/login-view.fxml");
     private final Resource fxml = new ClassPathResource("/fxml/ui.fxml");
 
     private final ObservableList<DriveFile> spreadsheets = FXCollections.observableArrayList();
     private final Map<String, Tab> openTabs = new HashMap<>();
 
-    private TextField spreadsheetFilter;
-    private ListView<DriveFile> spreadsheetList;
+    private Stage stage;
     private TabPane tabs;
     private Label status;
 
@@ -53,33 +57,49 @@ class StageInitializer {
         this.googleDrive = googleDrive;
     }
 
+    @EventListener
+    void on(StageReadyEvent event) {
+        this.stage = event.stage();
+        showLoginScreen();
+    }
+
+    private void showLoginScreen() {
+        var scene = new Scene(load(this.loginFxml));
+        applyTheme(scene, false);
+
+        Button signIn = (Button) scene.lookup("#signIn");
+        signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
+
+        this.stage.setTitle(TITLE);
+        this.stage.setScene(scene);
+        this.stage.setOnHidden(_ -> System.exit(0));
+        this.stage.show();
+    }
 
     @EventListener
-    @SuppressWarnings("unchecked")
-    void on(StageReadyEvent event) throws Exception {
-        var loader = new FXMLLoader();
-        Parent root;
-        try (var fxmlInputStream = this.fxml.getInputStream()) {
-            root = loader.load(fxmlInputStream);
-        }
-        var scene = new Scene(root);
+    void on(UserSignedInEvent event) {
+        Threads.onTheFxThread(() -> showMainScreen(event));
+    }
 
-        this.spreadsheetFilter = (TextField) scene.lookup("#spreadsheetFilter");
-        this.spreadsheetList = (ListView<DriveFile>) scene.lookup("#spreadsheetList");
+    @SuppressWarnings("unchecked")
+    private void showMainScreen(UserSignedInEvent event) {
+        ListView<DriveFile> spreadsheetList;
+        var scene = new Scene(load(this.fxml));
+
+        TextField spreadsheetFilter = (TextField) scene.lookup("#spreadsheetFilter");
+        spreadsheetList = (ListView<DriveFile>) scene.lookup("#spreadsheetList");
         this.tabs = (TabPane) scene.lookup("#tabs");
 
-        Button signIn = (Button) scene.lookup("#signIn"); //
-        signIn.setOnAction(_ -> Threads.offTheFxThread(() -> this.login.start(CLIENT_REGISTRATION_ID)));
         Button runScript = (Button) scene.lookup("#runScript"); //
         runScript.setOnAction(_ -> Threads.offTheFxThread(this::runScript));
-        status = (Label) scene.lookup("#status");
-        status.setText("Gestart");
+        this.status = (Label) scene.lookup("#status");
+        this.status.setText("Ingelogd als " + event.name());
 
         var lightTheme = (CheckBox) scene.lookup("#lightTheme");
         applyTheme(scene, lightTheme.isSelected());
         lightTheme.selectedProperty().addListener((_, _, isLight) -> applyTheme(scene, isLight));
 
-        this.spreadsheetList.setCellFactory(_ -> new ListCell<>() {
+        spreadsheetList.setCellFactory(_ -> new ListCell<>() {
             @Override
             protected void updateItem(DriveFile item, boolean empty) {
                 super.updateItem(item, empty);
@@ -88,34 +108,29 @@ class StageInitializer {
         });
 
         var filtered = new FilteredList<>(this.spreadsheets);
-        this.spreadsheetFilter.textProperty().addListener((_, _, filter) -> {
+        spreadsheetFilter.textProperty().addListener((_, _, filter) -> {
             var needle = filter == null ? "" : filter.trim().toLowerCase();
             filtered.setPredicate(file -> needle.isEmpty() || file.name().toLowerCase().contains(needle));
         });
-        this.spreadsheetList.setItems(filtered);
+        spreadsheetList.setItems(filtered);
 
-        this.spreadsheetList.getSelectionModel().selectedItemProperty().addListener((_, _, selected) -> {
+        spreadsheetList.getSelectionModel().selectedItemProperty().addListener((_, _, selected) -> {
             if (selected != null) {
                 openFormulierTab(selected);
             }
         });
 
-        var stage = event.stage();
-        stage.setTitle(TITLE);
-        stage.setScene(scene);
-        stage.setOnHidden(_ -> System.exit(0));
-        stage.show();
+        this.stage.setScene(scene);
+
+        Threads.offTheFxThread(this::loadSpreadsheets);
     }
 
-
-    @EventListener
-    void on(UserSignedInEvent event) {
-        Threads.onTheFxThread(() -> {
-            this.status.setText("Ingelogd als " + event.name());
-            this.spreadsheetFilter.setDisable(false);
-            this.spreadsheetList.setDisable(false);
-        });
-        Threads.offTheFxThread(this::loadSpreadsheets);
+    private static Parent load(Resource fxml) {
+        try (var fxmlInputStream = fxml.getInputStream()) {
+            return new FXMLLoader().load(fxmlInputStream);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void loadSpreadsheets() {
@@ -125,17 +140,15 @@ class StageInitializer {
 
     private void applyTheme(Scene scene, boolean light) {
         scene.getStylesheets().removeAll(
-                getClass().getResource(DARK_THEME).toExternalForm(),
-                getClass().getResource(LIGHT_THEME).toExternalForm());
-        scene.getStylesheets().add(getClass().getResource(light ? LIGHT_THEME : DARK_THEME).toExternalForm());
+                Objects.requireNonNull(getClass().getResource(DARK_THEME)).toExternalForm(),
+                Objects.requireNonNull(getClass().getResource(LIGHT_THEME)).toExternalForm());
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource(light ? LIGHT_THEME : DARK_THEME)).toExternalForm());
     }
 
     private void runScript() {
         String s = this.googleDrive.runFunctionMetParameter();
         Threads.onTheFxThread(() -> this.status.setText(s));
     }
-
-
 
     private void openFormulierTab(DriveFile file) {
         var existing = this.openTabs.get(file.id());
