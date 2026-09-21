@@ -10,6 +10,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -61,9 +62,10 @@ class FormulierView {
 
     Node build(String spreadsheetId, Formulier formulier, GoogleDriveService googleDrive, Label status,
                        Runnable reload) {
+        var loader = new FXMLLoader();
         Parent root;
         try (var fxmlInputStream = FXML.getInputStream()) {
-            root = new FXMLLoader().load(fxmlInputStream);
+            root = loader.load(fxmlInputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -81,11 +83,13 @@ class FormulierView {
         ((VBox) root.lookup("#navigatieBody")).getChildren()
                 .setAll(navigatieSection(navigatieItems, pending, original));
 
-        var save = (Button) root.lookup("#save");
+        // MenuItem isn't a Node, so it isn't reachable via root.lookup() - fetch it from the
+        // loader's fx:id namespace instead.
+        var save = (MenuItem) loader.getNamespace().get("save");
         save.setOnAction(_ -> save(spreadsheetId, googleDrive, save, pending, datumsItems, navigatieItems, reload));
-        var updateTeksten = (Button) root.lookup("#updateTeksten");
+        var updateTeksten = (MenuItem) loader.getNamespace().get("updateTeksten");
         updateTeksten.setOnAction(_ -> runUpdateTeksten(formulier.formulierNaam(), googleDrive, status));
-        var generateHtml = (Button) root.lookup("#generateHtml");
+        var generateHtml = (MenuItem) loader.getNamespace().get("generateHtml");
         generateHtml.setOnAction(_ -> runGenerateHtml(formulier.formulierNaam(), status));
 
         var scroll = new ScrollPane(root);
@@ -113,7 +117,7 @@ class FormulierView {
         });
     }
 
-    private static void save(String spreadsheetId, GoogleDriveService googleDrive, Button save,
+    private static void save(String spreadsheetId, GoogleDriveService googleDrive, MenuItem save,
                               Map<String, Object> pending, ObservableList<Datums> datumsItems,
                               ObservableList<Navigatie> navigatieItems, Runnable reload) {
         var changes = Map.copyOf(pending);

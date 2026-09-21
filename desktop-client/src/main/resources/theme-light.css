@@ -66,3 +66,27 @@
 .table-cell {
     -fx-text-fill: #111827;
 }
+
+.menu-bar {
+    -fx-background-color: #e5e7eb;
+}
+
+.menu-bar .label {
+    -fx-text-fill: #111827;
+}
+
+.menu:hover, .menu:showing, .menu:focused {
+    -fx-background-color: #d1d5db;
+}
+
+.context-menu {
+    -fx-background-color: #ffffff;
+}
+
+.menu-item .label {
+    -fx-text-fill: #111827;
+}
+
+.menu-item:hover, .menu-item:focused {
+    -fx-background-color: #d1d5db;
+}
